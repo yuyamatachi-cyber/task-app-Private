@@ -123,7 +123,7 @@ tr:hover .row-actions{opacity:1}
     </div>
     <div style="display:flex;gap:6px;align-items:center">
       <span id="task-count" style="font-size:12px;color:#888;margin-right:4px"></span>
-      <button class="icon-btn-sm" onclick="exportData()" title="共有用データをコピー"><i class="ti ti-copy"></i> 共有</button>
+      <button class="icon-btn-sm" onclick="exportData()" title="共有リンクを生成"><i class="ti ti-link"></i> 共有リンク</button>
       <button class="icon-btn-sm" onclick="openImport()" title="データを取り込む"><i class="ti ti-download"></i> 取込</button>
     </div>
   </div>
@@ -486,13 +486,13 @@ function exportData(){
       status: getOpts('status'),
       assignee: getOpts('assignee'),
     },
-    exportedAt: new Date().toLocaleString('ja-JP'),
   };
-  const json = JSON.stringify(payload);
-  navigator.clipboard.writeText(json).then(()=>{
-    toast('クリップボードにコピーしました — SlackやLINEに貼り付けて共有できます');
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const url = location.origin + location.pathname + '?share=' + encoded;
+  navigator.clipboard.writeText(url).then(()=>{
+    toast('共有リンクをコピーしました — SlackやLINEに貼り付けて送れます');
   }).catch(()=>{
-    prompt('以下をコピーして共有してください:', json);
+    prompt('以下のURLを共有してください:', url);
   });
 }
 
@@ -554,6 +554,36 @@ document.getElementById('import-overlay').addEventListener('click',e=>{if(e.targ
 document.getElementById('title-input').addEventListener('blur',finishEditTitle);
 document.getElementById('title-input').addEventListener('keydown',e=>{if(e.key==='Enter')finishEditTitle();if(e.key==='Escape'){document.getElementById('title-input').style.display='none';document.getElementById('app-title').style.display='inline';}});
 ['bpo','status','assignee'].forEach(t=>{document.getElementById('inp-'+t).addEventListener('keydown',e=>{if(e.key==='Enter')addOpt(t);});});
+
+// Check for share URL param
+(function(){
+  const params = new URLSearchParams(location.search);
+  const share = params.get('share');
+  if(share){
+    try{
+      const payload = JSON.parse(decodeURIComponent(escape(atob(share))));
+      if(payload.tasks && Array.isArray(payload.tasks)){
+        const existingIds = new Set(tasks.map(t=>t.id));
+        let added = 0;
+        payload.tasks.forEach(t=>{
+          if(!existingIds.has(t.id)){tasks.push(t);nextId=Math.max(nextId,t.id+1);added++;}
+        });
+        if(payload.opts){
+          ['bpo','status','assignee'].forEach(type=>{
+            if(payload.opts[type]){
+              const merged=[...new Set([...getOpts(type),...payload.opts[type]])];
+              setOpts(type,merged);
+            }
+          });
+        }
+        saveTasks();
+        // Remove share param from URL without reload
+        history.replaceState(null,'',location.pathname);
+        setTimeout(()=>toast(added+'件のタスクを取り込みました'),500);
+      }
+    }catch(e){}
+  }
+})();
 
 const savedTitle = ls('app-title', null);
 if(savedTitle){document.getElementById('app-title').textContent=savedTitle;document.title=savedTitle;}
