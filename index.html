@@ -472,7 +472,7 @@ function finishEditTitle(){
   const val=inp.value.trim()||'LinkBPO タスク管理';
   span.textContent=val;
   document.title=val;
-  lsSet('app-title',val);
+  localStorage.setItem('app-title', val);
   inp.style.display='none';
   span.style.display='inline';
 }
@@ -585,7 +585,7 @@ document.getElementById('title-input').addEventListener('keydown',e=>{if(e.key==
   }
 })();
 
-const savedTitle = ls('app-title', null);
+const savedTitle = localStorage.getItem('app-title');
 if(savedTitle){document.getElementById('app-title').textContent=savedTitle;document.title=savedTitle;}
 render();
 </script>
