@@ -87,6 +87,24 @@ tr:hover .row-actions{opacity:1}
   .stats-grid{grid-template-columns:1fr 1fr}
   .form-2{grid-template-columns:1fr}
 }
+
+.settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-start;justify-content:center;padding-top:60px}
+.settings-overlay.open{display:flex}
+.settings-modal{background:#fff;border-radius:12px;border:1px solid #e8e8e4;width:100%;max-width:480px;padding:22px;max-height:80vh;overflow-y:auto}
+.settings-section{margin-bottom:20px}
+.settings-section-title{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #f0f0ec}
+.opt-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.opt-row{display:flex;align-items:center;gap:6px}
+.opt-row span{flex:1;font-size:13px;color:#1a1a1a;padding:5px 8px;background:#f8f8f6;border-radius:6px;border:1px solid #e8e8e4}
+.opt-del{background:transparent;border:none;cursor:pointer;color:#ccc;font-size:16px;line-height:1;padding:2px 4px;border-radius:4px}
+.opt-del:hover{color:#E24B4A;background:#fef2f2}
+.opt-add-row{display:flex;gap:6px}
+.opt-add-row input{flex:1;padding:7px 10px;font-size:13px;border:1px solid #e0e0dc;border-radius:8px;background:#fff;color:#1a1a1a}
+.opt-add-row input:focus{outline:none;border-color:#999}
+.opt-add-btn{padding:7px 14px;font-size:13px;border-radius:8px;background:#1a1a1a;color:#fff;border:none;cursor:pointer;white-space:nowrap}
+.opt-add-btn:hover{background:#333}
+.settings-btn{background:transparent;border:none;cursor:pointer;color:#888;font-size:20px;padding:4px;line-height:1;border-radius:6px}
+.settings-btn:hover{color:#1a1a1a;background:#f0f0ec}
 </style>
 </head>
 <body>
@@ -97,7 +115,7 @@ tr:hover .row-actions{opacity:1}
     <span id="app-title" onclick="startEditTitle()" title="クリックして編集" style="cursor:pointer;border-bottom:1px dashed transparent" onmouseover="this.style.borderBottomColor='#ccc'" onmouseout="this.style.borderBottomColor='transparent'">LinkBPO タスク管理</span>
     <input id="title-input" type="text" style="display:none;font-size:15px;font-weight:500;border:none;border-bottom:1px solid #999;outline:none;background:transparent;color:inherit;width:220px" onblur="finishEditTitle()" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEditTitle()">
   </div>
-  <span class="api-info" id="api-info">接続確認中...</span>
+  <div style="display:flex;align-items:center;gap:8px"><span class="api-info" id="api-info">接続確認中...</span><button class="settings-btn" onclick="openSettings()" title="選択肢を編集"><i class="ti ti-settings"></i></button></div>
 </div>
 
 <div class="main">
@@ -142,15 +160,15 @@ tr:hover .row-actions{opacity:1}
     <div class="form-2">
       <div><label class="form-label">区分</label>
         <select class="form-input" id="f-bpo"></select>
-        <button type="button" onclick="addOption('bpo')" style="margin-top:4px;font-size:11px;color:#888;background:transparent;border:none;cursor:pointer;padding:0">+ 新しく追加</button></div>
+</div>
       <div><label class="form-label">ステータス</label>
         <select class="form-input" id="f-status"></select>
-        <button type="button" onclick="addOption('status')" style="margin-top:4px;font-size:11px;color:#888;background:transparent;border:none;cursor:pointer;padding:0">+ 新しく追加</button></div>
+</div>
     </div>
     <div class="form-2">
       <div><label class="form-label">担当者</label>
         <select class="form-input" id="f-assignee"></select>
-        <button type="button" onclick="addOption('assignee')" style="margin-top:4px;font-size:11px;color:#888;background:transparent;border:none;cursor:pointer;padding:0">+ 新しく追加</button></div>
+</div>
       <div><label class="form-label">期日</label>
         <input class="form-input" id="f-due" type="date"></div>
     </div>
@@ -347,6 +365,10 @@ function toast(msg,err=false){
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('modal-overlay'))closeModal();});
+document.getElementById('settings-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('settings-overlay'))closeSettings();});
+['bpo','status','assignee'].forEach(t=>{
+  document.getElementById('inp-'+t).addEventListener('keydown',e=>{if(e.key==='Enter')addOpt(t);});
+});
 
 
 const DEFAULT_OPTIONS = {
@@ -355,7 +377,6 @@ const DEFAULT_OPTIONS = {
   assignee: ['田中 一郎','鈴木 花子','中村 誠','伊藤 さき','山田 健太','小林 めぐみ'],
 };
 const OPTION_KEYS = {bpo:'opts-bpo', status:'opts-status', assignee:'opts-assignee'};
-const LABEL = {bpo:'区分', status:'ステータス', assignee:'担当者'};
 
 function getOptions(type){
   const saved = localStorage.getItem(OPTION_KEYS[type]);
@@ -370,7 +391,9 @@ function populateSelects(){
     const opts = getOptions(type);
     const sel = document.getElementById('f-'+type);
     if(!sel) return;
+    const cur = sel.value;
     sel.innerHTML = opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+    if(cur && opts.includes(cur)) sel.value = cur;
   });
   populateFilterBpo();
 }
@@ -378,21 +401,51 @@ function populateSelects(){
 function populateFilterBpo(){
   const opts = getOptions('bpo');
   const sel = document.getElementById('filter-bpo');
+  const cur = sel.value;
   sel.innerHTML = '<option value="">すべての区分</option>' +
     opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  if(cur) sel.value = cur;
 }
 
-function addOption(type){
-  const label = LABEL[type];
-  const val = prompt(`新しい${label}名を入力してください`);
-  if(!val || !val.trim()) return;
-  const trimmed = val.trim();
-  const opts = getOptions(type);
-  if(opts.includes(trimmed)){ alert('すでに存在します'); return; }
-  opts.push(trimmed);
-  saveOptions(type, opts);
+function openSettings(){
+  renderOptLists();
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings(){
+  document.getElementById('settings-overlay').classList.remove('open');
   populateSelects();
-  document.getElementById('f-'+type).value = trimmed;
+}
+
+function renderOptLists(){
+  ['bpo','status','assignee'].forEach(type => {
+    const opts = getOptions(type);
+    const list = document.getElementById('opts-'+type+'-list');
+    list.innerHTML = opts.map((o,i) => `
+      <div class="opt-row">
+        <span>${o}</span>
+        <button class="opt-del" onclick="delOpt('${type}',${i})" title="削除"><i class="ti ti-x" style="font-size:12px"></i></button>
+      </div>`).join('');
+  });
+}
+
+function addOpt(type){
+  const inp = document.getElementById('inp-'+type);
+  const val = inp.value.trim();
+  if(!val) return;
+  const opts = getOptions(type);
+  if(opts.includes(val)){ inp.style.borderColor='#E24B4A'; return; }
+  inp.style.borderColor='';
+  opts.push(val);
+  saveOptions(type, opts);
+  inp.value = '';
+  renderOptLists();
+}
+
+function delOpt(type, idx){
+  const opts = getOptions(type);
+  opts.splice(idx, 1);
+  saveOptions(type, opts);
+  renderOptLists();
 }
 
 function startEditTitle(){
@@ -433,5 +486,39 @@ loadTitle();
 populateSelects();
 checkHealth();
 </script>
+
+<!-- SETTINGS -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-modal">
+    <div class="modal-header" style="margin-bottom:16px">
+      <span class="modal-title">選択肢の管理</span>
+      <button class="close-btn" onclick="closeSettings()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">区分</div>
+      <div class="opt-list" id="opts-bpo-list"></div>
+      <div class="opt-add-row">
+        <input type="text" id="inp-bpo" placeholder="新しい区分を入力">
+        <button class="opt-add-btn" onclick="addOpt('bpo')">追加</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">ステータス</div>
+      <div class="opt-list" id="opts-status-list"></div>
+      <div class="opt-add-row">
+        <input type="text" id="inp-status" placeholder="新しいステータスを入力">
+        <button class="opt-add-btn" onclick="addOpt('status')">追加</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">担当者</div>
+      <div class="opt-list" id="opts-assignee-list"></div>
+      <div class="opt-add-row">
+        <input type="text" id="inp-assignee" placeholder="新しい担当者を入力">
+        <button class="opt-add-btn" onclick="addOpt('assignee')">追加</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
