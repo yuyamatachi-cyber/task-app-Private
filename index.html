@@ -267,9 +267,11 @@ async function loadAll(){
     }
 
     // Load opts from DB
-    opts = {...DEFAULTS};
+    opts = {bpo:[...DEFAULTS.bpo], status:[...DEFAULTS.status], assignee:[...DEFAULTS.assignee]};
     (settingsRows||[]).forEach(r=>{
-      if(opts[r.key] !== undefined) opts[r.key] = r.value;
+      if(r.key === 'title') return;
+      const val = Array.isArray(r.value) ? r.value : (typeof r.value === 'string' ? JSON.parse(r.value) : r.value);
+      if(Array.isArray(val)) opts[r.key] = val;
     });
 
     // Load title
@@ -441,11 +443,12 @@ async function confirmDel(){
 }
 
 async function saveOpts(type){
-  try{
-    await supa('/rest/v1/settings','POST',{key:type,value:opts[type]});
-  }catch(e){
-    await supa('/rest/v1/settings?key=eq.'+type,'PATCH',{value:opts[type]});
-  }
+  const res = await fetch(SUPA_URL+'/rest/v1/settings', {
+    method:'POST',
+    headers:{...HEADERS,'Prefer':'resolution=merge-duplicates,return=representation'},
+    body:JSON.stringify({key:type, value:opts[type]})
+  });
+  return res.json();
 }
 
 function openSettings(){renderOptLists();document.getElementById('settings-overlay').classList.add('open');}
