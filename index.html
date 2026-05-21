@@ -413,7 +413,17 @@ function openInlineOpts(type){
   }, 100);
 }
 function openSettings(){renderOptLists();document.getElementById('settings-overlay').classList.add('open');}
-function closeSettings(){document.getElementById('settings-overlay').classList.remove('open');render();}
+function closeSettings(){
+  document.getElementById('settings-overlay').classList.remove('open');
+  ['bpo','status','assignee'].forEach(type=>{
+    const sel = document.getElementById('f-'+type);
+    if(!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = getOpts(type).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    if(cur && getOpts(type).includes(cur)) sel.value = cur;
+  });
+  render();
+}
 
 function renderOptLists(){
   ['bpo','status','assignee'].forEach(type=>{
