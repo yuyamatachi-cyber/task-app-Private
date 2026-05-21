@@ -95,8 +95,9 @@ tr:hover .row-actions{opacity:1}
 
 <div class="header">
   <div class="header-title">
-    <span id="app-title" class="editable-title" onclick="startEditTitle()" title="クリックして編集">LinkBPO タスク管理</span>
-    <input id="title-input" type="text" style="display:none;font-size:15px;font-weight:500;border:none;border-bottom:1px solid #999;outline:none;background:transparent;color:inherit;width:220px">
+    <span id="app-title" onclick="startEditTitle()" title="クリックして編集" style="cursor:pointer">LinkBPO タスク管理</span>
+    <input id="title-input" type="text" style="display:none;font-size:15px;font-weight:500;border:none;border-bottom:1px solid #999;outline:none;background:transparent;color:inherit;width:200px">
+    <button id="title-save-btn" onclick="finishEditTitle()" style="display:none;margin-left:6px;padding:3px 10px;font-size:12px;font-weight:500;border-radius:6px;background:#1a1a1a;color:#fff;border:none;cursor:pointer">保存</button>
   </div>
   <button class="settings-icon-btn" onclick="openSettings()" title="選択肢を管理"><i class="ti ti-settings"></i></button>
 </div>
@@ -461,19 +462,23 @@ function delOpt(type,idx){
 function startEditTitle(){
   const span=document.getElementById('app-title');
   const inp=document.getElementById('title-input');
+  const btn=document.getElementById('title-save-btn');
   inp.value=span.textContent;
   span.style.display='none';
   inp.style.display='inline-block';
+  btn.style.display='inline-block';
   inp.focus();inp.select();
 }
 function finishEditTitle(){
   const span=document.getElementById('app-title');
   const inp=document.getElementById('title-input');
+  const btn=document.getElementById('title-save-btn');
   const val=inp.value.trim()||'LinkBPO タスク管理';
   span.textContent=val;
   document.title=val;
   localStorage.setItem('app-title', val);
   inp.style.display='none';
+  btn.style.display='none';
   span.style.display='inline';
 }
 
@@ -552,7 +557,7 @@ document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.targe
 document.getElementById('settings-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('settings-overlay'))closeSettings();});
 document.getElementById('import-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('import-overlay'))closeImport();});
 document.getElementById('title-input').addEventListener('blur',finishEditTitle);
-document.getElementById('title-input').addEventListener('keydown',e=>{if(e.key==='Enter')finishEditTitle();if(e.key==='Escape'){document.getElementById('title-input').style.display='none';document.getElementById('app-title').style.display='inline';}});
+document.getElementById('title-input').addEventListener('keydown',e=>{if(e.key==='Enter')finishEditTitle();if(e.key==='Escape'){document.getElementById('title-input').style.display='none';document.getElementById('title-save-btn').style.display='none';document.getElementById('app-title').style.display='inline';}});
 ['bpo','status','assignee'].forEach(t=>{document.getElementById('inp-'+t).addEventListener('keydown',e=>{if(e.key==='Enter')addOpt(t);});});
 
 // Check for share URL param
