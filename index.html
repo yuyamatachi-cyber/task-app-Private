@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">LinkBPO タスク管理</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e8e8e4;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.header-title{font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px}
+.api-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.api-dot.ok{background:#639922}.api-dot.err{background:#E24B4A}
+.api-info{font-size:11px;color:#888}
+.main{max-width:960px;margin:0 auto;padding:24px 16px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:12px 16px}
+.stat-n{font-size:24px;font-weight:500}
+.stat-l{font-size:11px;color:#888;margin-top:2px}
+.tab-bar{display:flex;gap:0;border-bottom:1px solid #e8e8e4;margin-bottom:16px}
+.tab{padding:8px 18px;font-size:13px;cursor:pointer;border:none;background:transparent;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s}
+.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a;font-weight:500}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.add-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:13px;font-weight:500;border-radius:8px;background:#1a1a1a;color:#fff;border:none;cursor:pointer}
+.add-btn:hover{background:#333}
+.add-btn:disabled{opacity:.4;cursor:not-allowed}
+.filter-sel{font-size:12px;padding:7px 10px;border-radius:8px;border:1px solid #e0e0dc;background:#fff;color:#1a1a1a;cursor:pointer}
+.refresh-btn{font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #e0e0dc;background:#fff;color:#888;cursor:pointer}
+.refresh-btn:hover{color:#1a1a1a}
+.kb-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kb-col{background:#f0f0ec;border-radius:10px;padding:10px;min-height:120px}
+.kb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kb-label{font-size:12px;font-weight:500;color:#666}
+.kb-count{font-size:11px;background:#fff;border:1px solid #e0e0dc;border-radius:99px;padding:1px 8px;color:#666}
+.card{background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:10px;margin-bottom:8px;cursor:default}
+.card:hover{border-color:#ccc}
+.card-title{font-size:13px;color:#1a1a1a;margin-bottom:6px;line-height:1.4}
+.card-due{font-size:11px;color:#888;margin-bottom:6px}
+.card-meta{display:flex;align-items:center;justify-content:space-between}
+.card-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.card:hover .card-actions{opacity:1}
+.icon-btn{background:transparent;border:none;cursor:pointer;color:#888;padding:3px 5px;border-radius:4px;font-size:14px;line-height:1}
+.icon-btn:hover{color:#1a1a1a;background:#f0f0ec}
+.icon-btn.danger:hover{color:#E24B4A}
+.tag{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500}
+.tag-blue{background:#E6F1FB;color:#0C447C}
+.tag-amber{background:#FAEEDA;color:#633806}
+.tag-purple{background:#EEEDFE;color:#3C3489}
+.tag-green{background:#EAF3DE;color:#27500A}
+.av{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:500}
+.list-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e8e8e4}
+.list-table th{font-size:11px;color:#888;font-weight:500;text-align:left;padding:8px 12px;border-bottom:1px solid #e8e8e4;background:#f8f8f6}
+.list-table td{font-size:13px;padding:9px 12px;border-bottom:1px solid #f0f0ec;vertical-align:middle}
+.list-table tr:last-child td{border-bottom:none}
+.list-table tr:hover td{background:#fafaf8}
+.row-actions{display:flex;gap:4px;opacity:0}
+tr:hover .row-actions{opacity:1}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-start;justify-content:center;padding-top:60px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;border:1px solid #e8e8e4;width:100%;max-width:440px;padding:22px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-title{font-size:15px;font-weight:500}
+.close-btn{background:transparent;border:none;cursor:pointer;color:#888;font-size:20px;line-height:1}
+.form-row{margin-bottom:13px}
+.form-label{font-size:12px;color:#666;margin-bottom:4px;display:block}
+.form-input{width:100%;padding:8px 11px;font-size:13px;border:1px solid #e0e0dc;border-radius:8px;background:#fff;color:#1a1a1a}
+.form-input:focus{outline:none;border-color:#999}
+.form-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid #e8e8e4}
+.btn-cancel{padding:8px 18px;font-size:13px;border-radius:8px;background:transparent;border:1px solid #e0e0dc;color:#888;cursor:pointer}
+.btn-cancel:hover{background:#f8f8f6}
+.btn-save{padding:8px 18px;font-size:13px;font-weight:500;border-radius:8px;background:#1a1a1a;color:#fff;border:none;cursor:pointer}
+.btn-save:hover{background:#333}
+.btn-save:disabled{opacity:.4}
+.del-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;align-items:center;justify-content:center}
+.del-overlay.open{display:flex}
+.del-box{background:#fff;border-radius:12px;padding:24px;max-width:320px;text-align:center;border:1px solid #e8e8e4}
+.del-box p{font-size:13px;color:#666;margin-bottom:18px;line-height:1.6}
+.btn-delete{padding:8px 18px;font-size:13px;font-weight:500;border-radius:8px;background:#E24B4A;color:#fff;border:none;cursor:pointer}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:9px 20px;border-radius:99px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:200;background:#1a1a1a;color:#fff}
+.toast.err{background:#E24B4A}
+.toast.show{opacity:1}
+.loading-state{padding:32px;text-align:center;color:#888;font-size:13px;background:#fff;border-radius:10px;border:1px solid #e8e8e4}
+@media(max-width:640px){
+  .kb-cols{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .form-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <span class="api-dot" id="api-dot"></span>
+    <span id="app-title" onclick="startEditTitle()" title="クリックして編集" style="cursor:pointer;border-bottom:1px dashed transparent" onmouseover="this.style.borderBottomColor='#ccc'" onmouseout="this.style.borderBottomColor='transparent'">LinkBPO タスク管理</span>
+    <input id="title-input" type="text" style="display:none;font-size:15px;font-weight:500;border:none;border-bottom:1px solid #999;outline:none;background:transparent;color:inherit;width:220px" onblur="finishEditTitle()" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEditTitle()">
+  </div>
+  <span class="api-info" id="api-info">接続確認中...</span>
+</div>
+
+<div class="main">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-n" id="s-total">—</div><div class="stat-l">合計タスク</div></div>
+    <div class="stat-card"><div class="stat-n" id="s-inprog" style="color:#185FA5">—</div><div class="stat-l">進行中</div></div>
+    <div class="stat-card"><div class="stat-n" id="s-review" style="color:#BA7517">—</div><div class="stat-l">レビュー待ち</div></div>
+    <div class="stat-card"><div class="stat-n" id="s-done" style="color:#639922">—</div><div class="stat-l">完了</div></div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchView('kanban',this)"><i class="ti ti-layout-kanban"></i> カンバン</button>
+    <button class="tab" onclick="switchView('list',this)"><i class="ti ti-list"></i> リスト</button>
+  </div>
+
+  <div class="toolbar">
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="add-btn" id="add-btn" onclick="openModal()" disabled><i class="ti ti-plus" style="font-size:14px"></i> タスクを追加</button>
+      <select class="filter-sel" id="filter-bpo" onchange="render()">
+        <option value="">すべての区分</option>
+      </select>
+      <button class="refresh-btn" onclick="loadAll()" title="更新"><i class="ti ti-refresh"></i></button>
+    </div>
+    <span id="task-count" style="font-size:12px;color:#888"></span>
+  </div>
+
+  <div id="view-kanban"></div>
+  <div id="view-list" style="display:none"></div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">タスクを追加</span>
+      <button class="close-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">タスク名 <span style="color:#E24B4A">*</span></label>
+      <input class="form-input" id="f-title" type="text" placeholder="タスク名を入力">
+    </div>
+    <div class="form-2">
+      <div><label class="form-label">区分</label>
+        <select class="form-input" id="f-bpo"></select>
+        <button type="button" onclick="addOption('bpo')" style="margin-top:4px;font-size:11px;color:#888;background:transparent;border:none;cursor:pointer;padding:0">+ 新しく追加</button></div>
+      <div><label class="form-label">ステータス</label>
+        <select class="form-input" id="f-status"></select>
+        <button type="button" onclick="addOption('status')" style="margin-top:4px;font-size:11px;color:#888;background:transparent;border:none;cursor:pointer;padding:0">+ 新しく追加</button></div>
+    </div>
+    <div class="form-2">
+      <div><label class="form-label">担当者</label>
+        <select class="form-input" id="f-assignee"></select>
+        <button type="button" onclick="addOption('assignee')" style="margin-top:4px;font-size:11px;color:#888;background:transparent;border:none;cursor:pointer;padding:0">+ 新しく追加</button></div>
+      <div><label class="form-label">期日</label>
+        <input class="form-input" id="f-due" type="date"></div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">メモ</label>
+      <textarea class="form-input" id="f-note" rows="2" style="resize:vertical"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" id="btn-save" onclick="saveTask()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE -->
+<div class="del-overlay" id="del-overlay">
+  <div class="del-box">
+    <p>「<strong id="del-name"></strong>」を削除しますか？</p>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn-cancel" onclick="closeDel()">キャンセル</button>
+      <button class="btn-delete" id="btn-del-ok" onclick="confirmDel()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+const STATUSES = ['未着手','進行中','レビュー待ち','完了'];
+const BPO_TAG = {'建築BPO':'tag-blue','土木BPO':'tag-amber','LinkBPO':'tag-purple'};
+const AV = {
+  '田中 一郎':{bg:'#EEEDFE',cl:'#3C3489',i:'田'},'鈴木 花子':{bg:'#E1F5EE',cl:'#085041',i:'鈴'},
+  '中村 誠':{bg:'#FAEEDA',cl:'#633806',i:'中'},'伊藤 さき':{bg:'#FCEBEB',cl:'#791F1F',i:'伊'},
+  '山田 健太':{bg:'#E6F1FB',cl:'#185FA5',i:'山'},'小林 めぐみ':{bg:'#EAF3DE',cl:'#3B6D11',i:'小'},
+};
+let tasks=[], editId=null, delId=null, view='kanban';
+
+async function api(path,opts={}){
+  const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opts});
+  if(!r.ok) throw new Error(r.status);
+  if(r.status===204) return null;
+  return r.json();
+}
+
+async function loadAll(){
+  try{
+    tasks=await api('/api/tasks');
+    const s=await api('/api/stats');
+    const b=s.by_status||{};
+    const tot=Object.values(b).reduce((a,c)=>a+c,0);
+    document.getElementById('s-total').textContent=tot;
+    document.getElementById('s-inprog').textContent=b['進行中']||0;
+    document.getElementById('s-review').textContent=b['レビュー待ち']||0;
+    document.getElementById('s-done').textContent=b['完了']||0;
+    render();
+  }catch(e){toast('データ取得失敗',true);}
+}
+
+async function checkHealth(){
+  const dot=document.getElementById('api-dot');
+  const info=document.getElementById('api-info');
+  try{
+    await api('/api/health');
+    dot.className='api-dot ok';
+    info.textContent='API接続済み';
+    document.getElementById('add-btn').disabled=false;
+    loadAll();
+  }catch(e){
+    dot.className='api-dot err';
+    info.textContent='API接続エラー';
+    document.getElementById('view-kanban').innerHTML='<div class="loading-state">APIに接続できません</div>';
+  }
+}
+
+function ft(){const b=document.getElementById('filter-bpo').value;return b?tasks.filter(t=>t.bpo===b):tasks;}
+function av(n){const a=AV[n]||{bg:'#eee',cl:'#666',i:'?'};return`<span class="av" style="background:${a.bg};color:${a.cl}">${a.i}</span>`;}
+
+function render(){
+  const f=ft();
+  document.getElementById('task-count').textContent=`${f.length} 件`;
+  if(view==='kanban') renderKanban(f); else renderList(f);
+}
+
+function renderKanban(f){
+  const html=STATUSES.map(s=>{
+    const ct=f.filter(t=>t.status===s);
+    return`<div class="kb-col">
+      <div class="kb-head"><span class="kb-label">${s}</span><span class="kb-count">${ct.length}</span></div>
+      ${ct.map(t=>`<div class="card">
+        <div class="card-title">${esc(t.title)}</div>
+        ${t.due?`<div class="card-due"><i class="ti ti-calendar" style="font-size:11px"></i> ${t.due}</div>`:''}
+        <div class="card-meta">
+          <span class="tag ${s==='完了'?'tag-green':BPO_TAG[t.bpo]||'tag-blue'}">${t.bpo}</span>
+          <div style="display:flex;align-items:center;gap:6px">${av(t.assignee)}
+            <div class="card-actions">
+              <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
+              <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </div></div>`).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('view-kanban').innerHTML=`<div class="kb-cols">${html}</div>`;
+}
+
+function renderList(f){
+  const rows=f.map(t=>`<tr>
+    <td style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</td>
+    <td><span class="tag ${BPO_TAG[t.bpo]||'tag-blue'}">${t.bpo}</span></td>
+    <td><span class="tag ${t.status==='完了'?'tag-green':t.status==='レビュー待ち'?'tag-amber':'tag-blue'}">${t.status}</span></td>
+    <td style="white-space:nowrap">${av(t.assignee)} <span style="font-size:12px;margin-left:4px">${t.assignee}</span></td>
+    <td style="color:#888;font-size:12px">${t.due||'—'}</td>
+    <td><div class="row-actions">
+      <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
+      <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
+    </div></td></tr>`).join('');
+  document.getElementById('view-list').innerHTML=`<table class="list-table">
+    <colgroup><col style="width:32%"><col style="width:13%"><col style="width:15%"><col style="width:20%"><col style="width:12%"><col style="width:8%"></colgroup>
+    <thead><tr><th>タスク名</th><th>BPO</th><th>ステータス</th><th>担当者</th><th>期日</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function switchView(id,btn){
+  view=id;
+  document.getElementById('view-kanban').style.display=id==='kanban'?'block':'none';
+  document.getElementById('view-list').style.display=id==='list'?'block':'none';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function openModal(id){
+  editId=id||null;
+  document.getElementById('modal-title').textContent=id?'タスクを編集':'タスクを追加';
+  populateSelects();
+  if(id){const t=tasks.find(x=>x.id===id);
+    document.getElementById('f-title').value=t.title;
+    document.getElementById('f-bpo').value=t.bpo;
+    document.getElementById('f-status').value=t.status;
+    document.getElementById('f-assignee').value=t.assignee;
+    document.getElementById('f-due').value=t.due||'';
+    document.getElementById('f-note').value=t.note||'';
+  }else{
+    document.getElementById('f-title').value='';
+    document.getElementById('f-bpo').value='建築BPO';
+    document.getElementById('f-status').value='未着手';
+    document.getElementById('f-assignee').value='田中 一郎';
+    document.getElementById('f-due').value='';
+    document.getElementById('f-note').value='';
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('f-title').focus(),50);
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+
+async function saveTask(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){document.getElementById('f-title').style.borderColor='#E24B4A';return;}
+  document.getElementById('f-title').style.borderColor='';
+  const btn=document.getElementById('btn-save');
+  btn.disabled=true;btn.textContent='保存中...';
+  const body=JSON.stringify({
+    title,bpo:document.getElementById('f-bpo').value,
+    status:document.getElementById('f-status').value,
+    assignee:document.getElementById('f-assignee').value,
+    due:document.getElementById('f-due').value,
+    note:document.getElementById('f-note').value,
+  });
+  try{
+    if(editId) await api(`/api/tasks/${editId}`,{method:'PUT',body});
+    else await api('/api/tasks',{method:'POST',body});
+    closeModal();toast(editId?'更新しました':'追加しました');
+    await loadAll();
+  }catch(e){toast('保存に失敗しました',true);}
+  finally{btn.disabled=false;btn.textContent='保存';}
+}
+
+function openDel(id){delId=id;document.getElementById('del-name').textContent=tasks.find(t=>t.id===id).title;document.getElementById('del-overlay').classList.add('open');}
+function closeDel(){document.getElementById('del-overlay').classList.remove('open');}
+async function confirmDel(){
+  const btn=document.getElementById('btn-del-ok');
+  btn.disabled=true;btn.textContent='削除中...';
+  try{await api(`/api/tasks/${delId}`,{method:'DELETE'});closeDel();toast('削除しました');await loadAll();}
+  catch(e){toast('削除失敗',true);}
+  finally{btn.disabled=false;btn.textContent='削除する';}
+}
+
+function toast(msg,err=false){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast'+(err?' err':'');
+  el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('modal-overlay'))closeModal();});
+
+
+const DEFAULT_OPTIONS = {
+  bpo: ['建築BPO','土木BPO','LinkBPO'],
+  status: ['未着手','進行中','レビュー待ち','完了'],
+  assignee: ['田中 一郎','鈴木 花子','中村 誠','伊藤 さき','山田 健太','小林 めぐみ'],
+};
+const OPTION_KEYS = {bpo:'opts-bpo', status:'opts-status', assignee:'opts-assignee'};
+const LABEL = {bpo:'区分', status:'ステータス', assignee:'担当者'};
+
+function getOptions(type){
+  const saved = localStorage.getItem(OPTION_KEYS[type]);
+  return saved ? JSON.parse(saved) : [...DEFAULT_OPTIONS[type]];
+}
+function saveOptions(type, opts){
+  localStorage.setItem(OPTION_KEYS[type], JSON.stringify(opts));
+}
+
+function populateSelects(){
+  ['bpo','status','assignee'].forEach(type => {
+    const opts = getOptions(type);
+    const sel = document.getElementById('f-'+type);
+    if(!sel) return;
+    sel.innerHTML = opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  });
+  populateFilterBpo();
+}
+
+function populateFilterBpo(){
+  const opts = getOptions('bpo');
+  const sel = document.getElementById('filter-bpo');
+  sel.innerHTML = '<option value="">すべての区分</option>' +
+    opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+}
+
+function addOption(type){
+  const label = LABEL[type];
+  const val = prompt(`新しい${label}名を入力してください`);
+  if(!val || !val.trim()) return;
+  const trimmed = val.trim();
+  const opts = getOptions(type);
+  if(opts.includes(trimmed)){ alert('すでに存在します'); return; }
+  opts.push(trimmed);
+  saveOptions(type, opts);
+  populateSelects();
+  document.getElementById('f-'+type).value = trimmed;
+}
+
+function startEditTitle(){
+  const span=document.getElementById('app-title');
+  const inp=document.getElementById('title-input');
+  inp.value=span.textContent;
+  span.style.display='none';
+  inp.style.display='inline-block';
+  inp.focus();inp.select();
+}
+function finishEditTitle(){
+  const span=document.getElementById('app-title');
+  const inp=document.getElementById('title-input');
+  const val=inp.value.trim()||'LinkBPO タスク管理';
+  span.textContent=val;
+  document.getElementById('page-title').textContent=val;
+  document.title=val;
+  localStorage.setItem('app-title',val);
+  inp.style.display='none';
+  span.style.display='inline';
+}
+function cancelEditTitle(){
+  const span=document.getElementById('app-title');
+  const inp=document.getElementById('title-input');
+  inp.style.display='none';
+  span.style.display='inline';
+}
+function loadTitle(){
+  const saved=localStorage.getItem('app-title');
+  if(saved){
+    document.getElementById('app-title').textContent=saved;
+    document.getElementById('page-title').textContent=saved;
+    document.title=saved;
+  }
+}
+
+loadTitle();
+populateSelects();
+checkHealth();
+</script>
+</body>
+</html>
