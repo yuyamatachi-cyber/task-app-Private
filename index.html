@@ -3,13 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="page-title">LinkBPO タスク管理</title>
+<title>LinkBPO タスク管理</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f8f6;color:#1a1a1a;min-height:100vh}
 .header{background:#fff;border-bottom:1px solid #e8e8e4;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
-.header-title{font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px}
+.header-left{display:flex;align-items:center;gap:10px}
+.db-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.db-dot.ok{background:#639922}.db-dot.err{background:#E24B4A}.db-dot.loading{background:#BA7517;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.title-input{font-size:15px;font-weight:500;border:none;border-bottom:1px dashed transparent;outline:none;background:transparent;color:#1a1a1a;width:220px;cursor:text}
+.title-input:hover{border-bottom-color:#ccc}
+.title-input:focus{border-bottom-color:#999;cursor:text}
 .main{max-width:960px;margin:0 auto;padding:24px 16px}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
 .stat-card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:12px 16px}
@@ -21,8 +27,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .add-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:13px;font-weight:500;border-radius:8px;background:#1a1a1a;color:#fff;border:none;cursor:pointer}
 .add-btn:hover{background:#333}
+.add-btn:disabled{opacity:.4;cursor:not-allowed}
 .filter-sel{font-size:12px;padding:7px 10px;border-radius:8px;border:1px solid #e0e0dc;background:#fff;color:#1a1a1a;cursor:pointer}
-.icon-btn-sm{font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #e0e0dc;background:#fff;color:#888;cursor:pointer}
+.icon-btn-sm{font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #e0e0dc;background:#fff;color:#888;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
 .icon-btn-sm:hover{color:#1a1a1a}
 .kb-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .kb-col{background:#f0f0ec;border-radius:10px;padding:10px;min-height:80px}
@@ -59,17 +66,22 @@ tr:hover .row-actions{opacity:1}
 .form-input{width:100%;padding:8px 11px;font-size:13px;border:1px solid #e0e0dc;border-radius:8px;background:#fff;color:#1a1a1a}
 .form-input:focus{outline:none;border-color:#999}
 .form-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px}
+.form-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.gear-btn{background:transparent;border:none;cursor:pointer;color:#ccc;font-size:13px;padding:0;line-height:1}
+.gear-btn:hover{color:#888}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid #e8e8e4}
 .btn-cancel{padding:8px 18px;font-size:13px;border-radius:8px;background:transparent;border:1px solid #e0e0dc;color:#888;cursor:pointer}
 .btn-cancel:hover{background:#f8f8f6}
 .btn-save{padding:8px 18px;font-size:13px;font-weight:500;border-radius:8px;background:#1a1a1a;color:#fff;border:none;cursor:pointer}
 .btn-save:hover{background:#333}
+.btn-save:disabled{opacity:.4}
 .del-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;align-items:center;justify-content:center}
 .del-overlay.open{display:flex}
 .del-box{background:#fff;border-radius:12px;padding:24px;max-width:320px;text-align:center;border:1px solid #e8e8e4}
 .del-box p{font-size:13px;color:#666;margin-bottom:18px;line-height:1.6}
 .btn-delete{padding:8px 18px;font-size:13px;font-weight:500;border-radius:8px;background:#E24B4A;color:#fff;border:none;cursor:pointer}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:9px 20px;border-radius:99px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:300;background:#1a1a1a;color:#fff}
+.toast.err{background:#E24B4A}
 .toast.show{opacity:1}
 .settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-start;justify-content:center;padding-top:60px}
 .settings-overlay.open{display:flex}
@@ -84,55 +96,49 @@ tr:hover .row-actions{opacity:1}
 .opt-add-row input{flex:1;padding:7px 10px;font-size:13px;border:1px solid #e0e0dc;border-radius:8px;background:#fff;color:#1a1a1a}
 .opt-add-row input:focus{outline:none;border-color:#999}
 .opt-add-btn{padding:7px 14px;font-size:13px;border-radius:8px;background:#1a1a1a;color:#fff;border:none;cursor:pointer}
+.loading-state{padding:32px;text-align:center;color:#888;font-size:13px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #e0e0dc;border-top-color:#888;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
 .settings-icon-btn{background:transparent;border:none;cursor:pointer;color:#888;font-size:20px;padding:4px;line-height:1;border-radius:6px}
 .settings-icon-btn:hover{color:#1a1a1a;background:#f0f0ec}
-.editable-title{cursor:pointer;border-bottom:1px dashed transparent}
-.editable-title:hover{border-bottom-color:#ccc}
 @media(max-width:640px){.kb-cols{grid-template-columns:1fr 1fr}.stats-grid{grid-template-columns:1fr 1fr}.form-2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-title">
-    <input id="app-title-input" type="text" value="LinkBPO タスク管理"
-      style="font-size:15px;font-weight:500;border:none;border-bottom:1px dashed #ccc;outline:none;background:transparent;color:inherit;width:220px;cursor:text"
-      onfocus="this.style.borderBottomColor='#999'"
-      onblur="this.style.borderBottomColor='#ccc'"
+  <div class="header-left">
+    <span class="db-dot loading" id="db-dot"></span>
+    <input class="title-input" id="app-title" type="text" value="LinkBPO タスク管理" 
       onchange="saveTitle(this.value)"
-      onkeydown="if(event.key==='Enter'){saveTitle(this.value);this.blur();}">
+      onkeydown="if(event.key==='Enter'){saveTitle(this.value);this.blur()}">
   </div>
-  <button class="settings-icon-btn" onclick="openSettings()" title="選択肢を管理"><i class="ti ti-settings"></i></button>
+  <div style="display:flex;align-items:center;gap:6px">
+    <button class="icon-btn-sm" onclick="exportShareUrl()"><i class="ti ti-link"></i> 共有リンク</button>
+    <button class="settings-icon-btn" onclick="openSettings()" title="選択肢を管理"><i class="ti ti-settings"></i></button>
+  </div>
 </div>
 
 <div class="main">
   <div class="stats-grid">
-    <div class="stat-card"><div class="stat-n" id="s-total">0</div><div class="stat-l">合計タスク</div></div>
-    <div class="stat-card"><div class="stat-n" id="s-inprog" style="color:#185FA5">0</div><div class="stat-l">進行中</div></div>
-    <div class="stat-card"><div class="stat-n" id="s-review" style="color:#BA7517">0</div><div class="stat-l">レビュー待ち</div></div>
-    <div class="stat-card"><div class="stat-n" id="s-done" style="color:#639922">0</div><div class="stat-l">完了</div></div>
+    <div class="stat-card"><div class="stat-n" id="s-total">—</div><div class="stat-l">合計タスク</div></div>
+    <div class="stat-card"><div class="stat-n" id="s-inprog" style="color:#185FA5">—</div><div class="stat-l">進行中</div></div>
+    <div class="stat-card"><div class="stat-n" id="s-review" style="color:#BA7517">—</div><div class="stat-l">レビュー待ち</div></div>
+    <div class="stat-card"><div class="stat-n" id="s-done" style="color:#639922">—</div><div class="stat-l">完了</div></div>
   </div>
-
   <div class="tab-bar">
     <button class="tab active" onclick="switchView('kanban',this)"><i class="ti ti-layout-kanban"></i> カンバン</button>
     <button class="tab" onclick="switchView('list',this)"><i class="ti ti-list"></i> リスト</button>
   </div>
-
   <div class="toolbar">
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="add-btn" onclick="openModal()"><i class="ti ti-plus" style="font-size:14px"></i> タスクを追加</button>
-      <select class="filter-sel" id="filter-bpo" onchange="render()">
-        <option value="">すべての区分</option>
-      </select>
+      <button class="add-btn" id="add-btn" onclick="openModal()" disabled><i class="ti ti-plus" style="font-size:14px"></i> タスクを追加</button>
+      <select class="filter-sel" id="filter-bpo" onchange="render()"><option value="">すべての区分</option></select>
+      <button class="icon-btn-sm" onclick="loadAll()"><i class="ti ti-refresh"></i></button>
     </div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <span id="task-count" style="font-size:12px;color:#888;margin-right:4px"></span>
-      <button class="icon-btn-sm" onclick="exportData()" title="共有リンクを生成"><i class="ti ti-link"></i> 共有リンク</button>
-      <button class="icon-btn-sm" onclick="openImport()" title="データを取り込む"><i class="ti ti-download"></i> 取込</button>
-    </div>
+    <span id="task-count" style="font-size:12px;color:#888"></span>
   </div>
-
-  <div id="view-kanban"></div>
+  <div id="view-kanban"><div class="loading-state"><span class="spinner"></span>読み込み中...</div></div>
   <div id="view-list" style="display:none"></div>
 </div>
 
@@ -149,26 +155,17 @@ tr:hover .row-actions{opacity:1}
     </div>
     <div class="form-2">
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <label class="form-label" style="margin-bottom:0">区分</label>
-          <button type="button" onclick="openInlineOpts('bpo')" style="background:transparent;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1" title="選択肢を編集"><i class="ti ti-settings"></i></button>
-        </div>
+        <div class="form-label-row"><label class="form-label" style="margin:0">区分</label><button class="gear-btn" onclick="openInlineOpts('bpo')"><i class="ti ti-settings"></i></button></div>
         <select class="form-input" id="f-bpo"></select>
       </div>
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <label class="form-label" style="margin-bottom:0">ステータス</label>
-          <button type="button" onclick="openInlineOpts('status')" style="background:transparent;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1" title="選択肢を編集"><i class="ti ti-settings"></i></button>
-        </div>
+        <div class="form-label-row"><label class="form-label" style="margin:0">ステータス</label><button class="gear-btn" onclick="openInlineOpts('status')"><i class="ti ti-settings"></i></button></div>
         <select class="form-input" id="f-status"></select>
       </div>
     </div>
     <div class="form-2">
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <label class="form-label" style="margin-bottom:0">担当者</label>
-          <button type="button" onclick="openInlineOpts('assignee')" style="background:transparent;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1" title="選択肢を編集"><i class="ti ti-settings"></i></button>
-        </div>
+        <div class="form-label-row"><label class="form-label" style="margin:0">担当者</label><button class="gear-btn" onclick="openInlineOpts('assignee')"><i class="ti ti-settings"></i></button></div>
         <select class="form-input" id="f-assignee"></select>
       </div>
       <div><label class="form-label">期日</label><input class="form-input" id="f-due" type="date"></div>
@@ -179,7 +176,7 @@ tr:hover .row-actions{opacity:1}
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
-      <button class="btn-save" onclick="saveTask()">保存</button>
+      <button class="btn-save" id="btn-save" onclick="saveTask()">保存</button>
     </div>
   </div>
 </div>
@@ -190,7 +187,7 @@ tr:hover .row-actions{opacity:1}
     <p>「<strong id="del-name"></strong>」を削除しますか？</p>
     <div style="display:flex;gap:8px;justify-content:center">
       <button class="btn-cancel" onclick="closeDel()">キャンセル</button>
-      <button class="btn-delete" onclick="confirmDel()">削除する</button>
+      <button class="btn-delete" id="btn-del-ok" onclick="confirmDel()">削除する</button>
     </div>
   </div>
 </div>
@@ -204,129 +201,148 @@ tr:hover .row-actions{opacity:1}
     </div>
     <div class="sec-title">区分</div>
     <div class="opt-list" id="ol-bpo"></div>
-    <div class="opt-add-row">
-      <input type="text" id="inp-bpo" placeholder="新しい区分を入力">
-      <button class="opt-add-btn" onclick="addOpt('bpo')">追加</button>
-    </div>
+    <div class="opt-add-row"><input type="text" id="inp-bpo" placeholder="新しい区分を入力"><button class="opt-add-btn" onclick="addOpt('bpo')">追加</button></div>
     <div class="sec-title">ステータス</div>
     <div class="opt-list" id="ol-status"></div>
-    <div class="opt-add-row">
-      <input type="text" id="inp-status" placeholder="新しいステータスを入力">
-      <button class="opt-add-btn" onclick="addOpt('status')">追加</button>
-    </div>
+    <div class="opt-add-row"><input type="text" id="inp-status" placeholder="新しいステータスを入力"><button class="opt-add-btn" onclick="addOpt('status')">追加</button></div>
     <div class="sec-title">担当者</div>
     <div class="opt-list" id="ol-assignee"></div>
-    <div class="opt-add-row">
-      <input type="text" id="inp-assignee" placeholder="新しい担当者を入力">
-      <button class="opt-add-btn" onclick="addOpt('assignee')">追加</button>
-    </div>
+    <div class="opt-add-row"><input type="text" id="inp-assignee" placeholder="新しい担当者を入力"><button class="opt-add-btn" onclick="addOpt('assignee')">追加</button></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+const SUPA_URL = 'https://hcggwurjpxzqtchyqdsz.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZ2d3dXJqcHh6cXRjaHlxZHN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNTM5MzIsImV4cCI6MjA5NDkyOTkzMn0._QP4L1vqAu75lTki61Ah7cRRL1iM78lxS3alEAtvOrQ';
+const HEADERS = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+
 const DEFAULTS = {
-  bpo: ['建築BPO','土木BPO','LinkBPO'],
-  status: ['未着手','進行中','レビュー待ち','完了'],
-  assignee: ['田中 一郎','鈴木 花子','中村 誠','伊藤 さき','山田 健太','小林 めぐみ'],
+  bpo:['建築BPO','土木BPO','LinkBPO'],
+  status:['未着手','進行中','レビュー待ち','完了'],
+  assignee:['田中 一郎','鈴木 花子','中村 誠','伊藤 さき','山田 健太','小林 めぐみ'],
 };
-const SEED = [
-  {id:1,title:'基本設計書の作成',bpo:'建築BPO',status:'未着手',assignee:'田中 一郎',due:'2026-06-10',note:''},
-  {id:2,title:'施工図レビュー依頼',bpo:'土木BPO',status:'未着手',assignee:'鈴木 花子',due:'2026-06-05',note:''},
-  {id:3,title:'業務フロー整備',bpo:'LinkBPO',status:'未着手',assignee:'中村 誠',due:'2026-06-15',note:''},
-  {id:4,title:'竣工図デジタル化',bpo:'建築BPO',status:'進行中',assignee:'田中 一郎',due:'2026-05-28',note:''},
-  {id:5,title:'CADデータ整理',bpo:'土木BPO',status:'進行中',assignee:'伊藤 さき',due:'2026-05-30',note:''},
-  {id:6,title:'ナーミング規則策定',bpo:'LinkBPO',status:'進行中',assignee:'中村 誠',due:'2026-06-01',note:''},
-  {id:7,title:'積算チェック対応',bpo:'土木BPO',status:'進行中',assignee:'鈴木 花子',due:'2026-05-25',note:''},
-  {id:8,title:'組織図ドラフト',bpo:'LinkBPO',status:'レビュー待ち',assignee:'中村 誠',due:'2026-05-22',note:''},
-  {id:9,title:'断面図修正版',bpo:'建築BPO',status:'レビュー待ち',assignee:'伊藤 さき',due:'2026-05-23',note:''},
-  {id:10,title:'ヒアリングシート作成',bpo:'建築BPO',status:'完了',assignee:'鈴木 花子',due:'2026-05-15',note:''},
-  {id:11,title:'クライアント報告資料',bpo:'建築BPO',status:'完了',assignee:'田中 一郎',due:'2026-05-18',note:''},
-  {id:12,title:'マニュアル初版',bpo:'LinkBPO',status:'完了',assignee:'中村 誠',due:'2026-05-20',note:''},
+const SEED_TASKS = [
+  {title:'基本設計書の作成',bpo:'建築BPO',status:'未着手',assignee:'田中 一郎',due:'2026-06-10',note:''},
+  {title:'施工図レビュー依頼',bpo:'土木BPO',status:'未着手',assignee:'鈴木 花子',due:'2026-06-05',note:''},
+  {title:'業務フロー整備',bpo:'LinkBPO',status:'未着手',assignee:'中村 誠',due:'2026-06-15',note:''},
+  {title:'竣工図デジタル化',bpo:'建築BPO',status:'進行中',assignee:'田中 一郎',due:'2026-05-28',note:''},
+  {title:'CADデータ整理',bpo:'土木BPO',status:'進行中',assignee:'伊藤 さき',due:'2026-05-30',note:''},
+  {title:'ナーミング規則策定',bpo:'LinkBPO',status:'進行中',assignee:'中村 誠',due:'2026-06-01',note:''},
+  {title:'積算チェック対応',bpo:'土木BPO',status:'進行中',assignee:'鈴木 花子',due:'2026-05-25',note:''},
+  {title:'組織図ドラフト',bpo:'LinkBPO',status:'レビュー待ち',assignee:'中村 誠',due:'2026-05-22',note:''},
+  {title:'断面図修正版',bpo:'建築BPO',status:'レビュー待ち',assignee:'伊藤 さき',due:'2026-05-23',note:''},
+  {title:'ヒアリングシート作成',bpo:'建築BPO',status:'完了',assignee:'鈴木 花子',due:'2026-05-15',note:''},
+  {title:'クライアント報告資料',bpo:'建築BPO',status:'完了',assignee:'田中 一郎',due:'2026-05-18',note:''},
+  {title:'マニュアル初版',bpo:'LinkBPO',status:'完了',assignee:'中村 誠',due:'2026-05-20',note:''},
 ];
 
-function ls(k,d){try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch{return d;}}
-function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+let tasks=[], opts={...DEFAULTS}, editId=null, delId=null, view='kanban';
 
-let _stored = localStorage.getItem('tasks');
-let tasks;
-try {
-  tasks = _stored ? JSON.parse(_stored) : null;
-} catch(e) { tasks = null; }
-if(!tasks || !Array.isArray(tasks) || tasks.length === 0) {
-  tasks = SEED.map(t=>({...t}));
-  localStorage.setItem('tasks', JSON.stringify(tasks));
-}
-let nextId = Math.max(...tasks.map(t=>t.id), 0) + 1;
-let editId = null, delId = null, view = 'kanban';
-
-function getOpts(t){return ls('opts-'+t, DEFAULTS[t]);}
-function setOpts(t,v){lsSet('opts-'+t,v);}
-
-function colorFor(val, type){
-  const opts = getOpts(type);
-  const idx = opts.indexOf(val);
-  const COLORS = [
-    {bg:'#E6F1FB',cl:'#0C447C'},{bg:'#FAEEDA',cl:'#633806'},{bg:'#EEEDFE',cl:'#3C3489'},
-    {bg:'#EAF3DE',cl:'#27500A'},{bg:'#FCEBEB',cl:'#791F1F'},{bg:'#E1F5EE',cl:'#085041'},
-    {bg:'#FBEAF0',cl:'#72243E'},{bg:'#F1EFE8',cl:'#444441'},
-  ];
-  return idx >= 0 ? COLORS[idx % COLORS.length] : {bg:'#e8e8e4',cl:'#444'};
+async function supa(path, method='GET', body=null){
+  const res = await fetch(SUPA_URL+path, {
+    method, headers:{...HEADERS, ...(method==='GET'?{'Prefer':'return=representation'}:{'Prefer':'return=representation'})},
+    ...(body?{body:JSON.stringify(body)}:{})
+  });
+  if(!res.ok) throw new Error(await res.text());
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
 }
 
-function tagHtml(val, type){
-  const c = colorFor(val, type);
-  return `<span class="tag" style="background:${c.bg};color:${c.cl}">${esc(val)}</span>`;
+async function loadAll(){
+  try{
+    const [rows, settingsRows] = await Promise.all([
+      supa('/rest/v1/tasks?order=id'),
+      supa('/rest/v1/settings?select=key,value'),
+    ]);
+    tasks = rows || [];
+
+    // Seed tasks if empty
+    if(tasks.length === 0){
+      for(const t of SEED_TASKS){
+        const r = await supa('/rest/v1/tasks', 'POST', t);
+        if(r && r[0]) tasks.push(r[0]);
+      }
+    }
+
+    // Load opts from DB
+    opts = {...DEFAULTS};
+    (settingsRows||[]).forEach(r=>{
+      if(opts[r.key] !== undefined) opts[r.key] = r.value;
+    });
+
+    // Load title
+    const titleRow = (settingsRows||[]).find(r=>r.key==='title');
+    if(titleRow) {
+      document.getElementById('app-title').value = titleRow.value;
+      document.title = titleRow.value;
+    }
+
+    document.getElementById('db-dot').className='db-dot ok';
+    document.getElementById('add-btn').disabled=false;
+    render();
+  } catch(e){
+    document.getElementById('db-dot').className='db-dot err';
+    document.getElementById('view-kanban').innerHTML='<div class="loading-state" style="color:#E24B4A">DB接続エラー</div>';
+  }
 }
 
-function avHtml(name){
-  const c = colorFor(name, 'assignee');
-  return `<span class="av" style="background:${c.bg};color:${c.cl}">${esc(name.charAt(0))}</span>`;
+async function saveTitle(val){
+  val = val.trim() || 'LinkBPO タスク管理';
+  document.getElementById('app-title').value = val;
+  document.title = val;
+  try{
+    await supa('/rest/v1/settings', 'POST', {key:'title', value:val});
+  } catch(e){
+    // upsert
+    await supa('/rest/v1/settings?key=eq.title', 'PATCH', {value:val});
+  }
 }
 
+const COLORS=[
+  {bg:'#E6F1FB',cl:'#0C447C'},{bg:'#FAEEDA',cl:'#633806'},{bg:'#EEEDFE',cl:'#3C3489'},
+  {bg:'#EAF3DE',cl:'#27500A'},{bg:'#FCEBEB',cl:'#791F1F'},{bg:'#E1F5EE',cl:'#085041'},
+  {bg:'#FBEAF0',cl:'#72243E'},{bg:'#F1EFE8',cl:'#444441'},
+];
+function colorFor(val,type){const i=opts[type]?opts[type].indexOf(val):-1;return i>=0?COLORS[i%COLORS.length]:{bg:'#e8e8e4',cl:'#444'};}
+function tagHtml(val,type){const c=colorFor(val,type);return`<span class="tag" style="background:${c.bg};color:${c.cl}">${esc(val)}</span>`;}
+function avHtml(name){const c=colorFor(name,'assignee');return`<span class="av" style="background:${c.bg};color:${c.cl}">${esc((name||'?').charAt(0))}</span>`;}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-function saveTasks(){lsSet('tasks', tasks);}
-
 function updateStats(){
-  const by = {};
-  tasks.forEach(t=>{by[t.status]=(by[t.status]||0)+1;});
-  document.getElementById('s-total').textContent = tasks.length;
-  document.getElementById('s-inprog').textContent = by['進行中']||0;
-  document.getElementById('s-review').textContent = by['レビュー待ち']||0;
-  document.getElementById('s-done').textContent = by['完了']||0;
+  const by={};tasks.forEach(t=>{by[t.status]=(by[t.status]||0)+1;});
+  document.getElementById('s-total').textContent=tasks.length;
+  document.getElementById('s-inprog').textContent=by['進行中']||0;
+  document.getElementById('s-review').textContent=by['レビュー待ち']||0;
+  document.getElementById('s-done').textContent=by['完了']||0;
 }
 
-function populateFilterBpo(){
-  const sel = document.getElementById('filter-bpo');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">すべての区分</option>' +
-    getOpts('bpo').map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
-  if(cur) sel.value = cur;
+function populateFilter(){
+  const sel=document.getElementById('filter-bpo');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">すべての区分</option>'+(opts.bpo||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  if(cur)sel.value=cur;
 }
 
 function ft(){const b=document.getElementById('filter-bpo').value;return b?tasks.filter(t=>t.bpo===b):tasks;}
 
 function render(){
-  updateStats();
-  populateFilterBpo();
-  const f = ft();
-  document.getElementById('task-count').textContent = f.length + ' 件';
-  if(view==='kanban') renderKanban(f); else renderList(f);
+  updateStats();populateFilter();
+  const f=ft();
+  document.getElementById('task-count').textContent=f.length+' 件';
+  if(view==='kanban')renderKanban(f);else renderList(f);
 }
 
 function renderKanban(f){
-  const statuses = getOpts('status');
-  const html = statuses.map(s=>{
-    const ct = f.filter(t=>t.status===s);
-    return `<div class="kb-col">
+  const cols=(opts.status||[]).map(s=>{
+    const ct=f.filter(t=>t.status===s);
+    return`<div class="kb-col">
       <div class="kb-head"><span class="kb-label">${esc(s)}</span><span class="kb-count">${ct.length}</span></div>
       ${ct.map(t=>`<div class="card">
         <div class="card-title">${esc(t.title)}</div>
         ${t.due?`<div class="card-due"><i class="ti ti-calendar" style="font-size:11px"></i> ${t.due}</div>`:''}
-        <div class="card-meta">
-          ${tagHtml(t.bpo,'bpo')}
+        <div class="card-meta">${tagHtml(t.bpo,'bpo')}
           <div style="display:flex;align-items:center;gap:6px">${avHtml(t.assignee)}
             <div class="card-actions">
               <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
@@ -336,21 +352,20 @@ function renderKanban(f){
         </div></div>`).join('')}
     </div>`;
   }).join('');
-  document.getElementById('view-kanban').innerHTML = `<div class="kb-cols">${html}</div>`;
+  document.getElementById('view-kanban').innerHTML=`<div class="kb-cols">${cols}</div>`;
 }
 
 function renderList(f){
-  const rows = f.map(t=>`<tr>
+  const rows=f.map(t=>`<tr>
     <td style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</td>
-    <td>${tagHtml(t.bpo,'bpo')}</td>
-    <td>${tagHtml(t.status,'status')}</td>
+    <td>${tagHtml(t.bpo,'bpo')}</td><td>${tagHtml(t.status,'status')}</td>
     <td style="white-space:nowrap">${avHtml(t.assignee)} <span style="font-size:12px;margin-left:4px">${esc(t.assignee)}</span></td>
     <td style="color:#888;font-size:12px">${t.due||'—'}</td>
     <td><div class="row-actions">
       <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
       <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
     </div></td></tr>`).join('');
-  document.getElementById('view-list').innerHTML = `<table class="list-table">
+  document.getElementById('view-list').innerHTML=`<table class="list-table">
     <colgroup><col style="width:32%"><col style="width:13%"><col style="width:15%"><col style="width:20%"><col style="width:12%"><col style="width:8%"></colgroup>
     <thead><tr><th>タスク名</th><th>区分</th><th>ステータス</th><th>担当者</th><th>期日</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table>`;
@@ -361,25 +376,24 @@ function switchView(id,btn){
   document.getElementById('view-kanban').style.display=id==='kanban'?'block':'none';
   document.getElementById('view-list').style.display=id==='list'?'block':'none';
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  render();
+  btn.classList.add('active');render();
 }
 
 function openModal(id){
-  editId = id||null;
-  document.getElementById('modal-title').textContent = id ? 'タスクを編集' : 'タスクを追加';
+  editId=id||null;
+  document.getElementById('modal-title').textContent=id?'タスクを編集':'タスクを追加';
   ['bpo','status','assignee'].forEach(type=>{
-    const sel = document.getElementById('f-'+type);
-    sel.innerHTML = getOpts(type).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    const sel=document.getElementById('f-'+type);
+    sel.innerHTML=(opts[type]||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
   });
   if(id){
-    const t = tasks.find(x=>x.id===id);
-    document.getElementById('f-title').value = t.title;
-    document.getElementById('f-bpo').value = t.bpo;
-    document.getElementById('f-status').value = t.status;
-    document.getElementById('f-assignee').value = t.assignee;
-    document.getElementById('f-due').value = t.due||'';
-    document.getElementById('f-note').value = t.note||'';
+    const t=tasks.find(x=>x.id===id);
+    document.getElementById('f-title').value=t.title;
+    document.getElementById('f-bpo').value=t.bpo;
+    document.getElementById('f-status').value=t.status;
+    document.getElementById('f-assignee').value=t.assignee;
+    document.getElementById('f-due').value=t.due||'';
+    document.getElementById('f-note').value=t.note||'';
   } else {
     document.getElementById('f-title').value='';
     document.getElementById('f-due').value='';
@@ -390,220 +404,110 @@ function openModal(id){
 }
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
 
-function saveTask(){
-  const title = document.getElementById('f-title').value.trim();
+async function saveTask(){
+  const title=document.getElementById('f-title').value.trim();
   if(!title){document.getElementById('f-title').style.borderColor='#E24B4A';return;}
   document.getElementById('f-title').style.borderColor='';
-  const data = {
-    title,
-    bpo: document.getElementById('f-bpo').value,
-    status: document.getElementById('f-status').value,
-    assignee: document.getElementById('f-assignee').value,
-    due: document.getElementById('f-due').value,
-    note: document.getElementById('f-note').value,
-  };
-  if(editId){
-    const i = tasks.findIndex(x=>x.id===editId);
-    tasks[i] = {...tasks[i], ...data};
-    toast('更新しました');
-  } else {
-    tasks.push({id: nextId++, ...data});
-    toast('追加しました');
-  }
-  saveTasks();
-  closeModal();
-  render();
+  const btn=document.getElementById('btn-save');
+  btn.disabled=true;btn.textContent='保存中...';
+  const data={title,bpo:document.getElementById('f-bpo').value,status:document.getElementById('f-status').value,assignee:document.getElementById('f-assignee').value,due:document.getElementById('f-due').value,note:document.getElementById('f-note').value};
+  try{
+    if(editId){
+      const r=await supa('/rest/v1/tasks?id=eq.'+editId,'PATCH',data);
+      const i=tasks.findIndex(x=>x.id===editId);
+      if(r&&r[0])tasks[i]=r[0];
+      toast('更新しました');
+    } else {
+      const r=await supa('/rest/v1/tasks','POST',data);
+      if(r&&r[0])tasks.push(r[0]);
+      toast('追加しました');
+    }
+    closeModal();render();
+  }catch(e){toast('保存に失敗しました',true);}
+  finally{btn.disabled=false;btn.textContent='保存';}
 }
 
 function openDel(id){delId=id;document.getElementById('del-name').textContent=tasks.find(t=>t.id===id).title;document.getElementById('del-overlay').classList.add('open');}
 function closeDel(){document.getElementById('del-overlay').classList.remove('open');}
-function confirmDel(){tasks=tasks.filter(t=>t.id!==delId);saveTasks();closeDel();toast('削除しました');render();}
+async function confirmDel(){
+  const btn=document.getElementById('btn-del-ok');
+  btn.disabled=true;btn.textContent='削除中...';
+  try{
+    await supa('/rest/v1/tasks?id=eq.'+delId,'DELETE');
+    tasks=tasks.filter(t=>t.id!==delId);
+    closeDel();toast('削除しました');render();
+  }catch(e){toast('削除に失敗しました',true);}
+  finally{btn.disabled=false;btn.textContent='削除する';}
+}
 
+async function saveOpts(type){
+  try{
+    await supa('/rest/v1/settings','POST',{key:type,value:opts[type]});
+  }catch(e){
+    await supa('/rest/v1/settings?key=eq.'+type,'PATCH',{value:opts[type]});
+  }
+}
 
+function openSettings(){renderOptLists();document.getElementById('settings-overlay').classList.add('open');}
 function openInlineOpts(type){
   renderOptLists();
   document.getElementById('settings-overlay').classList.add('open');
-  setTimeout(()=>{
-    const el = document.getElementById('inp-'+type);
-    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); }
-  }, 100);
+  setTimeout(()=>{const el=document.getElementById('inp-'+type);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();}},100);
 }
-function openSettings(){renderOptLists();document.getElementById('settings-overlay').classList.add('open');}
 function closeSettings(){
   document.getElementById('settings-overlay').classList.remove('open');
   ['bpo','status','assignee'].forEach(type=>{
-    const sel = document.getElementById('f-'+type);
-    if(!sel) return;
-    const cur = sel.value;
-    sel.innerHTML = getOpts(type).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
-    if(cur && getOpts(type).includes(cur)) sel.value = cur;
+    const sel=document.getElementById('f-'+type);
+    if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML=(opts[type]||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    if(cur&&(opts[type]||[]).includes(cur))sel.value=cur;
   });
   render();
 }
-
 function renderOptLists(){
   ['bpo','status','assignee'].forEach(type=>{
-    const opts = getOpts(type);
-    document.getElementById('ol-'+type).innerHTML = opts.map((o,i)=>
+    document.getElementById('ol-'+type).innerHTML=(opts[type]||[]).map((o,i)=>
       `<div class="opt-row"><span>${esc(o)}</span><button class="opt-del" onclick="delOpt('${type}',${i})"><i class="ti ti-x" style="font-size:12px"></i></button></div>`
     ).join('');
   });
 }
-
-function addOpt(type){
-  const inp = document.getElementById('inp-'+type);
-  const val = inp.value.trim();
-  if(!val) return;
-  const opts = getOpts(type);
-  if(opts.includes(val)){inp.style.borderColor='#E24B4A';return;}
+async function addOpt(type){
+  const inp=document.getElementById('inp-'+type);
+  const val=inp.value.trim();
+  if(!val)return;
+  if((opts[type]||[]).includes(val)){inp.style.borderColor='#E24B4A';return;}
   inp.style.borderColor='';
-  opts.push(val);
-  setOpts(type, opts);
+  opts[type]=[...(opts[type]||[]),val];
+  await saveOpts(type);
   inp.value='';
   renderOptLists();
 }
-
-function delOpt(type,idx){
-  const opts = getOpts(type);
-  opts.splice(idx,1);
-  setOpts(type,opts);
+async function delOpt(type,idx){
+  opts[type]=(opts[type]||[]).filter((_,i)=>i!==idx);
+  await saveOpts(type);
   renderOptLists();
 }
 
-function saveTitle(val){
-  val = val.trim() || 'LinkBPO タスク管理';
-  document.getElementById('app-title-input').value = val;
-  document.title = val;
-  localStorage.setItem('app-title', val);
-}
-
-
-function exportData(){
-  const payload = {
-    tasks: tasks,
-    opts: {
-      bpo: getOpts('bpo'),
-      status: getOpts('status'),
-      assignee: getOpts('assignee'),
-    },
-  };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  const url = location.origin + location.pathname + '?share=' + encoded;
+function exportShareUrl(){
+  const url=location.origin+location.pathname;
   navigator.clipboard.writeText(url).then(()=>{
-    toast('共有リンクをコピーしました — SlackやLINEに貼り付けて送れます');
-  }).catch(()=>{
-    prompt('以下のURLを共有してください:', url);
-  });
+    toast('URLをコピーしました — このURLを共有するだけで最新データが見えます');
+  }).catch(()=>prompt('共有URL:',url));
 }
 
-function openImport(){
-  document.getElementById('import-text').value='';
-  document.getElementById('import-err').style.display='none';
-  document.getElementById('import-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('import-text').focus(),50);
-}
-function closeImport(){document.getElementById('import-overlay').classList.remove('open');}
-
-function importData(){
-  const text = document.getElementById('import-text').value.trim();
-  const errEl = document.getElementById('import-err');
-  try {
-    const payload = JSON.parse(text);
-    if(!payload.tasks || !Array.isArray(payload.tasks)) throw new Error();
-    
-    // Merge tasks (skip duplicates by id)
-    const existingIds = new Set(tasks.map(t=>t.id));
-    let added = 0;
-    payload.tasks.forEach(t=>{
-      if(!existingIds.has(t.id)){
-        tasks.push(t);
-        nextId = Math.max(nextId, t.id+1);
-        added++;
-      }
-    });
-
-    // Merge options
-    if(payload.opts){
-      ['bpo','status','assignee'].forEach(type=>{
-        if(payload.opts[type]){
-          const cur = getOpts(type);
-          const merged = [...new Set([...cur, ...payload.opts[type]])];
-          setOpts(type, merged);
-        }
-      });
-    }
-
-    saveTasks();
-    closeImport();
-    render();
-    toast(`${added}件のタスクを取り込みました`);
-    errEl.style.display='none';
-  } catch(e) {
-    errEl.style.display='block';
-  }
-}
-function toast(msg){
+function toast(msg,err=false){
   const el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),2200);
+  el.textContent=msg;el.className='toast'+(err?' err':'');
+  el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2400);
 }
 
 document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('modal-overlay'))closeModal();});
 document.getElementById('settings-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('settings-overlay'))closeSettings();});
-document.getElementById('import-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('import-overlay'))closeImport();});
-
+document.getElementById('del-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('del-overlay'))closeDel();});
 ['bpo','status','assignee'].forEach(t=>{document.getElementById('inp-'+t).addEventListener('keydown',e=>{if(e.key==='Enter')addOpt(t);});});
 
-// Check for share URL param
-(function(){
-  const params = new URLSearchParams(location.search);
-  const share = params.get('share');
-  if(share){
-    try{
-      const payload = JSON.parse(decodeURIComponent(escape(atob(share))));
-      if(payload.tasks && Array.isArray(payload.tasks)){
-        const existingIds = new Set(tasks.map(t=>t.id));
-        let added = 0;
-        payload.tasks.forEach(t=>{
-          if(!existingIds.has(t.id)){tasks.push(t);nextId=Math.max(nextId,t.id+1);added++;}
-        });
-        if(payload.opts){
-          ['bpo','status','assignee'].forEach(type=>{
-            if(payload.opts[type]){
-              const merged=[...new Set([...getOpts(type),...payload.opts[type]])];
-              setOpts(type,merged);
-            }
-          });
-        }
-        saveTasks();
-        // Remove share param from URL without reload
-        history.replaceState(null,'',location.pathname);
-        setTimeout(()=>toast(added+'件のタスクを取り込みました'),500);
-      }
-    }catch(e){}
-  }
-})();
-
-const savedTitle = localStorage.getItem('app-title');
-if(savedTitle){document.getElementById('app-title-input').value=savedTitle;document.title=savedTitle;}
-render();
+loadAll();
 </script>
-
-<!-- IMPORT MODAL -->
-<div class="overlay" id="import-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">データを取り込む</span>
-      <button class="close-btn" onclick="closeImport()"><i class="ti ti-x"></i></button>
-    </div>
-    <p style="font-size:13px;color:#666;margin-bottom:12px;line-height:1.6">共有されたデータを貼り付けてください。<br>既存のタスクに<strong>追加</strong>されます（上書きしません）。</p>
-    <textarea class="form-input" id="import-text" rows="6" placeholder="ここに貼り付け..." style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
-    <div style="font-size:11px;color:#E24B4A;margin-top:6px;display:none" id="import-err">データの形式が正しくありません</div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeImport()">キャンセル</button>
-      <button class="btn-save" onclick="importData()">取り込む</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
