@@ -140,11 +140,29 @@ tr:hover .row-actions{opacity:1}
       <input class="form-input" id="f-title" type="text" placeholder="タスク名を入力">
     </div>
     <div class="form-2">
-      <div><label class="form-label">区分</label><select class="form-input" id="f-bpo"></select></div>
-      <div><label class="form-label">ステータス</label><select class="form-input" id="f-status"></select></div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label class="form-label" style="margin-bottom:0">区分</label>
+          <button type="button" onclick="openInlineOpts('bpo')" style="background:transparent;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1" title="選択肢を編集"><i class="ti ti-settings"></i></button>
+        </div>
+        <select class="form-input" id="f-bpo"></select>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label class="form-label" style="margin-bottom:0">ステータス</label>
+          <button type="button" onclick="openInlineOpts('status')" style="background:transparent;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1" title="選択肢を編集"><i class="ti ti-settings"></i></button>
+        </div>
+        <select class="form-input" id="f-status"></select>
+      </div>
     </div>
     <div class="form-2">
-      <div><label class="form-label">担当者</label><select class="form-input" id="f-assignee"></select></div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label class="form-label" style="margin-bottom:0">担当者</label>
+          <button type="button" onclick="openInlineOpts('assignee')" style="background:transparent;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1" title="選択肢を編集"><i class="ti ti-settings"></i></button>
+        </div>
+        <select class="form-input" id="f-assignee"></select>
+      </div>
       <div><label class="form-label">期日</label><input class="form-input" id="f-due" type="date"></div>
     </div>
     <div class="form-row">
@@ -385,6 +403,15 @@ function openDel(id){delId=id;document.getElementById('del-name').textContent=ta
 function closeDel(){document.getElementById('del-overlay').classList.remove('open');}
 function confirmDel(){tasks=tasks.filter(t=>t.id!==delId);saveTasks();closeDel();toast('削除しました');render();}
 
+
+function openInlineOpts(type){
+  renderOptLists();
+  document.getElementById('settings-overlay').classList.add('open');
+  setTimeout(()=>{
+    const el = document.getElementById('inp-'+type);
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); }
+  }, 100);
+}
 function openSettings(){renderOptLists();document.getElementById('settings-overlay').classList.add('open');}
 function closeSettings(){document.getElementById('settings-overlay').classList.remove('open');render();}
 
