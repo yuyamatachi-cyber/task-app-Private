@@ -121,7 +121,11 @@ tr:hover .row-actions{opacity:1}
         <option value="">すべての区分</option>
       </select>
     </div>
-    <span id="task-count" style="font-size:12px;color:#888"></span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span id="task-count" style="font-size:12px;color:#888;margin-right:4px"></span>
+      <button class="icon-btn-sm" onclick="exportData()" title="共有用データをコピー"><i class="ti ti-copy"></i> 共有</button>
+      <button class="icon-btn-sm" onclick="openImport()" title="データを取り込む"><i class="ti ti-download"></i> 取込</button>
+    </div>
   </div>
 
   <div id="view-kanban"></div>
@@ -473,6 +477,71 @@ function finishEditTitle(){
   span.style.display='inline';
 }
 
+
+function exportData(){
+  const payload = {
+    tasks: tasks,
+    opts: {
+      bpo: getOpts('bpo'),
+      status: getOpts('status'),
+      assignee: getOpts('assignee'),
+    },
+    exportedAt: new Date().toLocaleString('ja-JP'),
+  };
+  const json = JSON.stringify(payload);
+  navigator.clipboard.writeText(json).then(()=>{
+    toast('クリップボードにコピーしました — SlackやLINEに貼り付けて共有できます');
+  }).catch(()=>{
+    prompt('以下をコピーして共有してください:', json);
+  });
+}
+
+function openImport(){
+  document.getElementById('import-text').value='';
+  document.getElementById('import-err').style.display='none';
+  document.getElementById('import-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('import-text').focus(),50);
+}
+function closeImport(){document.getElementById('import-overlay').classList.remove('open');}
+
+function importData(){
+  const text = document.getElementById('import-text').value.trim();
+  const errEl = document.getElementById('import-err');
+  try {
+    const payload = JSON.parse(text);
+    if(!payload.tasks || !Array.isArray(payload.tasks)) throw new Error();
+    
+    // Merge tasks (skip duplicates by id)
+    const existingIds = new Set(tasks.map(t=>t.id));
+    let added = 0;
+    payload.tasks.forEach(t=>{
+      if(!existingIds.has(t.id)){
+        tasks.push(t);
+        nextId = Math.max(nextId, t.id+1);
+        added++;
+      }
+    });
+
+    // Merge options
+    if(payload.opts){
+      ['bpo','status','assignee'].forEach(type=>{
+        if(payload.opts[type]){
+          const cur = getOpts(type);
+          const merged = [...new Set([...cur, ...payload.opts[type]])];
+          setOpts(type, merged);
+        }
+      });
+    }
+
+    saveTasks();
+    closeImport();
+    render();
+    toast(`${added}件のタスクを取り込みました`);
+    errEl.style.display='none';
+  } catch(e) {
+    errEl.style.display='block';
+  }
+}
 function toast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
@@ -481,6 +550,7 @@ function toast(msg){
 
 document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('modal-overlay'))closeModal();});
 document.getElementById('settings-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('settings-overlay'))closeSettings();});
+document.getElementById('import-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('import-overlay'))closeImport();});
 document.getElementById('title-input').addEventListener('blur',finishEditTitle);
 document.getElementById('title-input').addEventListener('keydown',e=>{if(e.key==='Enter')finishEditTitle();if(e.key==='Escape'){document.getElementById('title-input').style.display='none';document.getElementById('app-title').style.display='inline';}});
 ['bpo','status','assignee'].forEach(t=>{document.getElementById('inp-'+t).addEventListener('keydown',e=>{if(e.key==='Enter')addOpt(t);});});
@@ -489,5 +559,22 @@ const savedTitle = ls('app-title', null);
 if(savedTitle){document.getElementById('app-title').textContent=savedTitle;document.title=savedTitle;}
 render();
 </script>
+
+<!-- IMPORT MODAL -->
+<div class="overlay" id="import-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">データを取り込む</span>
+      <button class="close-btn" onclick="closeImport()"><i class="ti ti-x"></i></button>
+    </div>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;line-height:1.6">共有されたデータを貼り付けてください。<br>既存のタスクに<strong>追加</strong>されます（上書きしません）。</p>
+    <textarea class="form-input" id="import-text" rows="6" placeholder="ここに貼り付け..." style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
+    <div style="font-size:11px;color:#E24B4A;margin-top:6px;display:none" id="import-err">データの形式が正しくありません</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeImport()">キャンセル</button>
+      <button class="btn-save" onclick="importData()">取り込む</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
