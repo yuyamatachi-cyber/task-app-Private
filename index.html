@@ -288,7 +288,7 @@ function renderList(f){
     </div></td></tr>`).join('');
   document.getElementById('view-list').innerHTML=`<table class="list-table">
     <colgroup><col style="width:32%"><col style="width:13%"><col style="width:15%"><col style="width:20%"><col style="width:12%"><col style="width:8%"></colgroup>
-    <thead><tr><th>タスク名</th><th>BPO</th><th>ステータス</th><th>担当者</th><th>期日</th><th></th></tr></thead>
+    <thead><tr><th>タスク名</th><th>区分</th><th>ステータス</th><th>担当者</th><th>期日</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
 
@@ -304,7 +304,6 @@ function switchView(id,btn){
 function openModal(id){
   editId=id||null;
   document.getElementById('modal-title').textContent=id?'タスクを編集':'タスクを追加';
-  populateSelects();
   if(id){const t=tasks.find(x=>x.id===id);
     document.getElementById('f-title').value=t.title;
     document.getElementById('f-bpo').value=t.bpo;
