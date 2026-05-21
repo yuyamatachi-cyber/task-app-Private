@@ -101,7 +101,21 @@ tr:hover .row-actions{opacity:1}
 @keyframes spin{to{transform:rotate(360deg)}}
 .settings-icon-btn{background:transparent;border:none;cursor:pointer;color:#888;font-size:20px;padding:4px;line-height:1;border-radius:6px}
 .settings-icon-btn:hover{color:#1a1a1a;background:#f0f0ec}
-@media(max-width:640px){.kb-cols{grid-template-columns:1fr 1fr}.stats-grid{grid-template-columns:1fr 1fr}.form-2{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .kb-cols{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .form-2{grid-template-columns:1fr}
+  .header{padding:0 12px}
+  .title-input{width:140px;font-size:14px}
+  .main{padding:12px 10px}
+  .share-label{display:none}
+  .toolbar{flex-wrap:wrap;gap:8px}
+  .tag{font-size:10px;padding:2px 6px;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;display:inline-block}
+  .card-meta{flex-wrap:nowrap;gap:4px}
+  .stat-n{font-size:20px}
+  .stat-l{font-size:10px}
+  .stat-card{padding:10px 12px}
+}
 </style>
 </head>
 <body>
@@ -114,7 +128,7 @@ tr:hover .row-actions{opacity:1}
       onkeydown="if(event.key==='Enter'){saveTitle(this.value);this.blur()}">
   </div>
   <div style="display:flex;align-items:center;gap:6px">
-    <button class="icon-btn-sm" onclick="exportShareUrl()"><i class="ti ti-link"></i> 共有リンク</button>
+    <button class="icon-btn-sm" onclick="exportShareUrl()"><i class="ti ti-link"></i><span class="share-label"> 共有リンク</span></button>
     <button class="settings-icon-btn" onclick="openSettings()" title="選択肢を管理"><i class="ti ti-settings"></i></button>
   </div>
 </div>
@@ -283,6 +297,13 @@ async function loadAll(){
 
     document.getElementById('db-dot').className='db-dot ok';
     document.getElementById('add-btn').disabled=false;
+    if(window.innerWidth < 640 && view==='kanban'){
+      view='list';
+      document.getElementById('view-kanban').style.display='none';
+      document.getElementById('view-list').style.display='block';
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab')[1].classList.add('active');
+    }
     render();
   } catch(e){
     document.getElementById('db-dot').className='db-dot err';
