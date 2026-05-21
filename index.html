@@ -95,9 +95,12 @@ tr:hover .row-actions{opacity:1}
 
 <div class="header">
   <div class="header-title">
-    <span id="app-title" onclick="startEditTitle()" title="クリックして編集" style="cursor:pointer">LinkBPO タスク管理</span>
-    <input id="title-input" type="text" style="display:none;font-size:15px;font-weight:500;border:none;border-bottom:1px solid #999;outline:none;background:transparent;color:inherit;width:200px">
-    <button id="title-save-btn" onmousedown="event.preventDefault()" onclick="finishEditTitle()" style="display:none;margin-left:6px;padding:3px 10px;font-size:12px;font-weight:500;border-radius:6px;background:#1a1a1a;color:#fff;border:none;cursor:pointer">保存</button>
+    <input id="app-title-input" type="text" value="LinkBPO タスク管理"
+      style="font-size:15px;font-weight:500;border:none;border-bottom:1px dashed #ccc;outline:none;background:transparent;color:inherit;width:220px;cursor:text"
+      onfocus="this.style.borderBottomColor='#999'"
+      onblur="this.style.borderBottomColor='#ccc'"
+      onchange="saveTitle(this.value)"
+      onkeydown="if(event.key==='Enter'){saveTitle(this.value);this.blur();}">
   </div>
   <button class="settings-icon-btn" onclick="openSettings()" title="選択肢を管理"><i class="ti ti-settings"></i></button>
 </div>
@@ -246,8 +249,15 @@ const SEED = [
 function ls(k,d){try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch{return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
 
-let tasks = ls('tasks', SEED);
-if(!tasks || tasks.length === 0) tasks = SEED.map(t=>({...t}));
+let _stored = localStorage.getItem('tasks');
+let tasks;
+try {
+  tasks = _stored ? JSON.parse(_stored) : null;
+} catch(e) { tasks = null; }
+if(!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+  tasks = SEED.map(t=>({...t}));
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+}
 let nextId = Math.max(...tasks.map(t=>t.id), 0) + 1;
 let editId = null, delId = null, view = 'kanban';
 
@@ -460,27 +470,11 @@ function delOpt(type,idx){
   renderOptLists();
 }
 
-function startEditTitle(){
-  const span=document.getElementById('app-title');
-  const inp=document.getElementById('title-input');
-  const btn=document.getElementById('title-save-btn');
-  inp.value=span.textContent;
-  span.style.display='none';
-  inp.style.display='inline-block';
-  btn.style.display='inline-block';
-  inp.focus();inp.select();
-}
-function finishEditTitle(){
-  const span=document.getElementById('app-title');
-  const inp=document.getElementById('title-input');
-  const btn=document.getElementById('title-save-btn');
-  const val=inp.value.trim()||'LinkBPO タスク管理';
-  span.textContent=val;
-  document.title=val;
+function saveTitle(val){
+  val = val.trim() || 'LinkBPO タスク管理';
+  document.getElementById('app-title-input').value = val;
+  document.title = val;
   localStorage.setItem('app-title', val);
-  inp.style.display='none';
-  btn.style.display='none';
-  span.style.display='inline';
 }
 
 
@@ -557,8 +551,7 @@ function toast(msg){
 document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('modal-overlay'))closeModal();});
 document.getElementById('settings-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('settings-overlay'))closeSettings();});
 document.getElementById('import-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('import-overlay'))closeImport();});
-document.getElementById('title-input').addEventListener('blur', function(){ setTimeout(()=>{ if(document.activeElement !== document.getElementById('title-save-btn')){ finishEditTitle(); } }, 100); });
-document.getElementById('title-input').addEventListener('keydown',e=>{if(e.key==='Enter')finishEditTitle();if(e.key==='Escape'){document.getElementById('title-input').style.display='none';document.getElementById('title-save-btn').style.display='none';document.getElementById('app-title').style.display='inline';}});
+
 ['bpo','status','assignee'].forEach(t=>{document.getElementById('inp-'+t).addEventListener('keydown',e=>{if(e.key==='Enter')addOpt(t);});});
 
 // Check for share URL param
@@ -592,7 +585,7 @@ document.getElementById('title-input').addEventListener('keydown',e=>{if(e.key==
 })();
 
 const savedTitle = localStorage.getItem('app-title');
-if(savedTitle){document.getElementById('app-title').textContent=savedTitle;document.title=savedTitle;}
+if(savedTitle){document.getElementById('app-title-input').value=savedTitle;document.title=savedTitle;}
 render();
 </script>
 
