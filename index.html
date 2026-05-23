@@ -170,17 +170,20 @@ tr:hover .row-actions{opacity:1}
     <div class="form-2">
       <div>
         <div class="form-label-row"><label class="form-label" style="margin:0">区分</label><button class="gear-btn" onclick="openInlineOpts('bpo')"><i class="ti ti-settings"></i></button></div>
-        <select class="form-input" id="f-bpo"></select>
+        <input class="form-input" id="f-bpo" type="text" list="dl-bpo" placeholder="選択または入力" autocomplete="off">
+        <datalist id="dl-bpo"></datalist>
       </div>
       <div>
         <div class="form-label-row"><label class="form-label" style="margin:0">ステータス</label><button class="gear-btn" onclick="openInlineOpts('status')"><i class="ti ti-settings"></i></button></div>
-        <select class="form-input" id="f-status"></select>
+        <input class="form-input" id="f-status" type="text" list="dl-status" placeholder="選択または入力" autocomplete="off">
+        <datalist id="dl-status"></datalist>
       </div>
     </div>
     <div class="form-2">
       <div>
         <div class="form-label-row"><label class="form-label" style="margin:0">担当者</label><button class="gear-btn" onclick="openInlineOpts('assignee')"><i class="ti ti-settings"></i></button></div>
-        <select class="form-input" id="f-assignee"></select>
+        <input class="form-input" id="f-assignee" type="text" list="dl-assignee" placeholder="選択または入力" autocomplete="off">
+        <datalist id="dl-assignee"></datalist>
       </div>
       <div><label class="form-label">期日</label><input class="form-input" id="f-due" type="date"></div>
     </div>
@@ -406,15 +409,16 @@ function openModal(id){
   editId=id||null;
   document.getElementById('modal-title').textContent=id?'タスクを編集':'タスクを追加';
   ['bpo','status','assignee'].forEach(type=>{
-    const sel=document.getElementById('f-'+type);
-    sel.innerHTML=(opts[type]||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    const dl=document.getElementById('dl-'+type);
+    dl.innerHTML=(opts[type]||[]).map(o=>`<option value="${esc(o)}">`).join('');
+    if(!id) document.getElementById('f-'+type).value='';
   });
   if(id){
     const t=tasks.find(x=>x.id===id);
     document.getElementById('f-title').value=t.title;
-    document.getElementById('f-bpo').value=t.bpo;
-    document.getElementById('f-status').value=t.status;
-    document.getElementById('f-assignee').value=t.assignee;
+    document.getElementById('f-bpo').value=t.bpo||'';
+    document.getElementById('f-status').value=t.status||'';
+    document.getElementById('f-assignee').value=t.assignee||'';
     document.getElementById('f-due').value=t.due||'';
     document.getElementById('f-note').value=t.note||'';
   } else {
