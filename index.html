@@ -347,7 +347,10 @@ function updateStats(){
 function populateFilter(){
   const sel=document.getElementById('filter-bpo');
   const cur=sel.value;
-  sel.innerHTML='<option value="">すべての区分</option>'+(opts.bpo||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  const knownBpo=opts.bpo||[];
+  const extraBpo=[...new Set(tasks.map(t=>t.bpo).filter(b=>b&&!knownBpo.includes(b)))];
+  const allBpo=[...knownBpo,...extraBpo];
+  sel.innerHTML='<option value="">すべての区分</option>'+allBpo.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
   if(cur)sel.value=cur;
 }
 
@@ -361,7 +364,10 @@ function render(){
 }
 
 function renderKanban(f){
-  const cols=(opts.status||[]).map(s=>{
+  const knownStatus=opts.status||[];
+  const extraStatus=[...new Set(f.map(t=>t.status).filter(s=>s&&!knownStatus.includes(s)))];
+  const allStatus=[...knownStatus,...extraStatus];
+  const cols=allStatus.map(s=>{
     const ct=f.filter(t=>t.status===s);
     return`<div class="kb-col">
       <div class="kb-head"><span class="kb-label">${esc(s)}</span><span class="kb-count">${ct.length}</span></div>
@@ -378,7 +384,7 @@ function renderKanban(f){
         </div></div>`).join('')}
     </div>`;
   }).join('');
-  document.getElementById('view-kanban').innerHTML=`<div class="kb-cols">${cols}</div>`;
+  document.getElementById('view-kanban').innerHTML=`<div class="kb-cols" style="grid-template-columns:repeat(${allStatus.length},minmax(180px,1fr))">${cols}</div>`;
 }
 
 function renderList(f){
