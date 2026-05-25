@@ -386,7 +386,7 @@ function renderKanban(f){
         <div class="card-meta">${tagHtml(t.bpo,'bpo')}
           <div style="display:flex;align-items:center;gap:6px">${avHtml(t.assignee)}
             <div class="card-actions">
-              <button class="icon-btn" title="完了・アーカイブ" onclick="archiveTask(${t.id})"><i class="ti ti-check"></i></button>
+              <button class="icon-btn" style="font-size:11px;padding:3px 7px" title="完了・アーカイブ" onclick="archiveTask(${t.id})">完了</button>
               <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
               <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
             </div>
@@ -404,7 +404,7 @@ function renderList(f){
     <td style="white-space:nowrap">${avHtml(t.assignee)} <span style="font-size:12px;margin-left:4px">${esc(t.assignee)}</span></td>
     <td style="color:#888;font-size:12px">${t.due||'—'}</td>
     <td><div class="row-actions">
-      <button class="icon-btn" title="完了・アーカイブ" onclick="archiveTask(${t.id})"><i class="ti ti-check"></i></button>
+      <button class="icon-btn" style="font-size:11px;padding:3px 7px" title="完了・アーカイブ" onclick="archiveTask(${t.id})">完了</button>
       <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
       <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
     </div></td></tr>`).join('');
