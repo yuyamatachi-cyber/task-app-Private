@@ -134,11 +134,8 @@ tr:hover .row-actions{opacity:1}
 </div>
 
 <div class="main">
-  <div class="stats-grid">
+  <div class="stats-grid" id="stats-grid">
     <div class="stat-card"><div class="stat-n" id="s-total">—</div><div class="stat-l">合計タスク</div></div>
-    <div class="stat-card"><div class="stat-n" id="s-inprog" style="color:#185FA5">—</div><div class="stat-l">進行中</div></div>
-    <div class="stat-card"><div class="stat-n" id="s-review" style="color:#BA7517">—</div><div class="stat-l">レビュー待ち</div></div>
-    <div class="stat-card"><div class="stat-n" id="s-done" style="color:#639922">—</div><div class="stat-l">完了</div></div>
   </div>
   <div class="tab-bar">
     <button class="tab active" onclick="switchView('kanban',this)"><i class="ti ti-layout-kanban"></i> カンバン</button>
@@ -339,9 +336,18 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function updateStats(){
   const by={};tasks.forEach(t=>{by[t.status]=(by[t.status]||0)+1;});
   document.getElementById('s-total').textContent=tasks.length;
-  document.getElementById('s-inprog').textContent=by['進行中']||0;
-  document.getElementById('s-review').textContent=by['レビュー待ち']||0;
-  document.getElementById('s-done').textContent=by['完了']||0;
+  const grid=document.getElementById('stats-grid');
+  // 合計カード以外を再生成
+  [...grid.querySelectorAll('.stat-card-dynamic')].forEach(el=>el.remove());
+  const colors=['#185FA5','#BA7517','#639922','#8B5CF6','#E24B4A','#0891B2','#D97706'];
+  const allStatus=[...(opts.status||[]),...Object.keys(by).filter(s=>s&&!(opts.status||[]).includes(s))];
+  allStatus.forEach((s,i)=>{
+    const card=document.createElement('div');
+    card.className='stat-card stat-card-dynamic';
+    card.innerHTML=`<div class="stat-n" style="color:${colors[i%colors.length]}">${by[s]||0}</div><div class="stat-l">${esc(s)}</div>`;
+    grid.appendChild(card);
+  });
+  grid.style.gridTemplateColumns=`repeat(${1+allStatus.length},1fr)`;
 }
 
 function populateFilter(){
