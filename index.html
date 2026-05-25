@@ -140,6 +140,7 @@ tr:hover .row-actions{opacity:1}
   <div class="tab-bar">
     <button class="tab active" onclick="switchView('kanban',this)"><i class="ti ti-layout-kanban"></i> カンバン</button>
     <button class="tab" onclick="switchView('list',this)"><i class="ti ti-list"></i> リスト</button>
+    <button class="tab" onclick="switchView('archive',this)"><i class="ti ti-archive"></i> アーカイブ</button>
   </div>
   <div class="toolbar">
     <div style="display:flex;gap:8px;align-items:center">
@@ -151,6 +152,7 @@ tr:hover .row-actions{opacity:1}
   </div>
   <div id="view-kanban"><div class="loading-state"><span class="spinner"></span>読み込み中...</div></div>
   <div id="view-list" style="display:none"></div>
+  <div id="view-archive" style="display:none"></div>
 </div>
 
 <!-- TASK MODAL -->
@@ -267,7 +269,7 @@ async function supa(path, method='GET', body=null){
 async function loadAll(){
   try{
     const [rows, settingsRows] = await Promise.all([
-      supa('/rest/v1/tasks?order=id'),
+      supa('/rest/v1/tasks?archived=eq.false&order=id'),
       supa('/rest/v1/settings?select=key,value'),
     ]);
     tasks = rows || [];
@@ -384,6 +386,7 @@ function renderKanban(f){
         <div class="card-meta">${tagHtml(t.bpo,'bpo')}
           <div style="display:flex;align-items:center;gap:6px">${avHtml(t.assignee)}
             <div class="card-actions">
+              <button class="icon-btn" title="完了・アーカイブ" onclick="archiveTask(${t.id})"><i class="ti ti-check"></i></button>
               <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
               <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
             </div>
@@ -401,6 +404,7 @@ function renderList(f){
     <td style="white-space:nowrap">${avHtml(t.assignee)} <span style="font-size:12px;margin-left:4px">${esc(t.assignee)}</span></td>
     <td style="color:#888;font-size:12px">${t.due||'—'}</td>
     <td><div class="row-actions">
+      <button class="icon-btn" title="完了・アーカイブ" onclick="archiveTask(${t.id})"><i class="ti ti-check"></i></button>
       <button class="icon-btn" onclick="openModal(${t.id})"><i class="ti ti-edit"></i></button>
       <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
     </div></td></tr>`).join('');
@@ -414,8 +418,12 @@ function switchView(id,btn){
   view=id;
   document.getElementById('view-kanban').style.display=id==='kanban'?'block':'none';
   document.getElementById('view-list').style.display=id==='list'?'block':'none';
+  document.getElementById('view-archive').style.display=id==='archive'?'block':'none';
+  document.getElementById('add-btn').style.display=id==='archive'?'none':'inline-flex';
+  document.getElementById('filter-bpo').style.display=id==='archive'?'none':'block';
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');render();
+  btn.classList.add('active');
+  if(id==='archive') renderArchive(); else render();
 }
 
 function openModal(id){
@@ -474,12 +482,52 @@ async function saveTask(){
       toast('更新しました');
     } else {
       const r=await supa('/rest/v1/tasks','POST',data);
-      if(r&&r[0])tasks.push(r[0]); else { const all=await supa('/rest/v1/tasks?order=id'); tasks=all||tasks; }
+      if(r&&r[0])tasks.push(r[0]); else { const all=await supa('/rest/v1/tasks?archived=eq.false&order=id'); tasks=all||tasks; }
       toast('追加しました');
     }
     closeModal();render();
   }catch(e){console.error('saveTask error:',e);toast('保存に失敗しました: '+e.message,true);}
   finally{btn.disabled=false;btn.textContent='保存';}
+}
+
+
+async function archiveTask(id){
+  try{
+    await supa('/rest/v1/tasks?id=eq.'+id,'PATCH',{archived:true});
+    tasks=tasks.filter(t=>t.id!==id);
+    toast('アーカイブしました');render();
+  }catch(e){toast('失敗しました',true);}
+}
+
+async function restoreTask(id){
+  try{
+    await supa('/rest/v1/tasks?id=eq.'+id,'PATCH',{archived:false});
+    const restored=await supa('/rest/v1/tasks?id=eq.'+id);
+    if(restored&&restored[0])tasks.push(restored[0]);
+    toast('復元しました');renderArchive();
+  }catch(e){toast('失敗しました',true);}
+}
+
+async function renderArchive(){
+  const el=document.getElementById('view-archive');
+  el.innerHTML='<div class="loading-state"><span class="spinner"></span>読み込み中...</div>';
+  try{
+    const archived=await supa('/rest/v1/tasks?archived=eq.true&order=id.desc');
+    if(!archived||archived.length===0){el.innerHTML='<div style="text-align:center;padding:40px;color:#888;font-size:13px">アーカイブされたタスクはありません</div>';return;}
+    const rows=archived.map(t=>`<tr>
+      <td style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</td>
+      <td>${t.bpo?tagHtml(t.bpo,'bpo'):''}</td><td>${t.status?tagHtml(t.status,'status'):''}</td>
+      <td style="white-space:nowrap">${avHtml(t.assignee)} <span style="font-size:12px;margin-left:4px">${esc(t.assignee||'')}</span></td>
+      <td style="color:#888;font-size:12px">${t.due||'—'}</td>
+      <td><div class="row-actions">
+        <button class="icon-btn" title="復元" onclick="restoreTask(${t.id})"><i class="ti ti-restore"></i></button>
+        <button class="icon-btn danger" onclick="openDel(${t.id})"><i class="ti ti-trash"></i></button>
+      </div></td></tr>`).join('');
+    el.innerHTML=`<table class="list-table">
+      <colgroup><col style="width:32%"><col style="width:13%"><col style="width:15%"><col style="width:20%"><col style="width:12%"><col style="width:8%"></colgroup>
+      <thead><tr><th>タスク名</th><th>区分</th><th>ステータス</th><th>担当者</th><th>期日</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  }catch(e){el.innerHTML='<div style="color:#E24B4A;padding:20px">読み込みに失敗しました</div>';}
 }
 
 function openDel(id){delId=id;document.getElementById('del-name').textContent=tasks.find(t=>t.id===id).title;document.getElementById('del-overlay').classList.add('open');}
