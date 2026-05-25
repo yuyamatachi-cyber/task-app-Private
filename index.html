@@ -441,13 +441,14 @@ async function saveTask(){
   const data={title,bpo:document.getElementById('f-bpo').value||null,status:document.getElementById('f-status').value||null,assignee:document.getElementById('f-assignee').value||null,due:due||null,note:document.getElementById('f-note').value};
   try{
     if(editId){
-      const r=await supa('/rest/v1/tasks?id=eq.'+editId,'PATCH',data);
+      await supa('/rest/v1/tasks?id=eq.'+editId,'PATCH',data);
+      const updated=await supa('/rest/v1/tasks?id=eq.'+editId);
       const i=tasks.findIndex(x=>x.id===editId);
-      if(r&&r[0])tasks[i]=r[0];
+      if(updated&&updated[0])tasks[i]=updated[0];
       toast('更新しました');
     } else {
       const r=await supa('/rest/v1/tasks','POST',data);
-      if(r&&r[0])tasks.push(r[0]);
+      if(r&&r[0])tasks.push(r[0]); else { const all=await supa('/rest/v1/tasks?order=id'); tasks=all||tasks; }
       toast('追加しました');
     }
     closeModal();render();
