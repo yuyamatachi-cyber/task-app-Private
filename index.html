@@ -437,7 +437,8 @@ async function saveTask(){
   document.getElementById('f-title').style.borderColor='';
   const btn=document.getElementById('btn-save');
   btn.disabled=true;btn.textContent='保存中...';
-  const data={title,bpo:document.getElementById('f-bpo').value,status:document.getElementById('f-status').value,assignee:document.getElementById('f-assignee').value,due:document.getElementById('f-due').value,note:document.getElementById('f-note').value};
+  const due=document.getElementById('f-due').value;
+  const data={title,bpo:document.getElementById('f-bpo').value||null,status:document.getElementById('f-status').value||null,assignee:document.getElementById('f-assignee').value||null,due:due||null,note:document.getElementById('f-note').value};
   try{
     if(editId){
       const r=await supa('/rest/v1/tasks?id=eq.'+editId,'PATCH',data);
@@ -450,7 +451,7 @@ async function saveTask(){
       toast('追加しました');
     }
     closeModal();render();
-  }catch(e){toast('保存に失敗しました',true);}
+  }catch(e){console.error('saveTask error:',e);toast('保存に失敗しました: '+e.message,true);}
   finally{btn.disabled=false;btn.textContent='保存';}
 }
 
