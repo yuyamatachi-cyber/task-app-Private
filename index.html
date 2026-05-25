@@ -369,6 +369,7 @@ function renderKanban(f){
   const allStatus=[...knownStatus,...extraStatus];
   const cols=allStatus.map(s=>{
     const ct=f.filter(t=>t.status===s);
+    if(ct.length===0) return '';
     return`<div class="kb-col">
       <div class="kb-head"><span class="kb-label">${esc(s)}</span><span class="kb-count">${ct.length}</span></div>
       ${ct.map(t=>`<div class="card">
